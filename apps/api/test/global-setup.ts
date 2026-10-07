@@ -3,18 +3,27 @@ import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 
 /**
- * Applies pending migrations to the test database once per `pnpm test` run, so integration
- * tests always see the current schema. Skipped when no test database is configured.
+ * Once per `pnpm test` run: apply pending migrations to the test database and sync roles and
+ * permissions, so integration tests see the current schema. Skipped without a test database.
  */
-export default function globalSetup(): void {
+export default async function globalSetup(): Promise<void> {
   loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
-  if (!process.env.DATABASE_URL_TEST) {
+  const url = process.env.DATABASE_URL_TEST;
+  if (!url) {
     return;
   }
-  try {
-    execSync('pnpm exec prisma migrate deploy --config prisma.test.config.ts', {
+  const run = (command: string, env: NodeJS.ProcessEnv = {}) =>
+    execSync(command, {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'pipe',
+      env: { ...process.env, ...env },
+    });
+  try {
+    run('pnpm exec prisma migrate deploy --config prisma.test.config.ts');
+    // Runs outside Jest's module system (the generated Prisma client uses .js specifiers).
+    run('pnpm exec tsx --conditions=source ../../prisma/seed.ts', {
+      DATABASE_URL: url,
+      SEED_SCOPE: 'rbac',
     });
   } catch (error) {
     // Only surface Prisma's output when something actually went wrong.

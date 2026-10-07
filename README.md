@@ -7,7 +7,7 @@ Client request (CRM) → approval → job published → AI screening → intervi
   → onboarding (HR) → deployment → timesheets → invoice (ERP-lite)
 ```
 
-> Status: **scaffold**. Monorepo, API and web shells, health check, CI and deploy config are in place. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
+> Status: **foundation + access control**. Data model, sign-in, roles and permissions, user administration and the audit log are live. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Tech stack
 
@@ -39,6 +39,23 @@ pnpm dev                  # web on http://localhost:5173, API on http://localhos
 - The web app calls `/api/*` on its own origin; Vite proxies it to the API, just as Vercel does in production.
 
 Without a database, everything still starts: `/health` reports `db: error` (HTTP 503) and the home page shows the database as unavailable.
+
+### Demo accounts
+
+After `pnpm db:seed` (fictional data). Every account uses the password **`StaffOS-Demo-2026!`**. With `VITE_DEMO_MODE=true`, the login page shows one-click shortcuts.
+
+| Role | Email |
+| --- | --- |
+| Super Admin | admin@staffos.demo |
+| HR Manager | hr@staffos.demo |
+| Recruiter | recruiter@staffos.demo |
+| Account Manager | am@staffos.demo |
+| Hiring Manager | hm@staffos.demo |
+| Finance | finance@staffos.demo |
+| Employee | employee@staffos.demo |
+| Client user (Gulf Build Contracting LLC) | client@staffos.demo |
+
+Invitation and password-reset emails are printed in the API log while `MAIL_PROVIDER=console`.
 
 ### Database (Neon, free)
 

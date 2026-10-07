@@ -1,14 +1,23 @@
 import { resolve } from 'node:path';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthCoreModule } from './common/auth/auth-core.module';
+import { JwtAuthGuard, PermissionsGuard } from './common/auth/guards';
 import { Env, validateEnv } from './common/config/env';
+import { RequestContextMiddleware } from './common/context/request-context';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { loggerParams } from './common/logging/logger.config';
-import { createValidationPipe } from './common/validation/validation.pipe';
+import { AppValidationPipe } from './common/validation/validation.pipe';
+import { JobsModule } from './infra/jobs/jobs.module';
+import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -28,12 +37,32 @@ import { HealthModule } from './modules/health/health.module';
           LOG_LEVEL: config.get('LOG_LEVEL', { infer: true }),
         }),
     }),
+    ThrottlerModule.forRoot({
+      // Generous default per IP; sensitive routes set tighter limits with @Throttle.
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }],
+      // Integration tests hit login many times; rate-limit tests opt back in.
+      skipIf: () => process.env.NODE_ENV === 'test' && process.env.THROTTLE_IN_TESTS !== 'true',
+    }),
     PrismaModule,
+    JobsModule,
+    MailModule,
+    AuthCoreModule,
+    AuditModule,
     HealthModule,
+    AuthModule,
+    UsersModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
-    { provide: APP_PIPE, useFactory: createValidationPipe },
+    { provide: APP_PIPE, useClass: AppValidationPipe },
+    // Order matters: rate limit first, then authenticate, then authorise (deny by default).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestContextMiddleware).forRoutes('*path');
+  }
+}

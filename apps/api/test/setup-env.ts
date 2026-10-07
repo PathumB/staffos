@@ -10,3 +10,8 @@ process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = process.env.TEST_LOG_LEVEL ?? 'silent';
 // Tests must never touch the dev database: only DATABASE_URL_TEST is ever used (CLAUDE.md §13).
 process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? '';
+process.env.JWT_ACCESS_SECRET = 'test-access-secret-0123456789abcdef';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-0123456789abcdef';
+process.env.MAIL_PROVIDER = 'console';
+process.env.CORS_ORIGINS = 'http://localhost:5173';
+process.env.APP_URL = 'http://localhost:5173';

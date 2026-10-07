@@ -8,6 +8,10 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Sign-in with lockout after 5 failed attempts, password reset by email, invitations, and sessions that survive reloads (rotating refresh cookie) and sign out everywhere on password change.
+- Roles and permissions for 8 roles, enforced on every API route; admin pages for users (invite, edit roles, deactivate), the permission matrix and the audit log.
+- App shell with sidebar navigation (drawer on mobile), account menu, light/dark mode and a role-aware dashboard.
+- Demo accounts for every role (fictional).
 - Data model: 55 tables across identity, CRM, recruitment, HR, onboarding, ERP-lite, workflow, AI and platform, with an ERD in `docs/erd.md`.
 - Database-level integrity: append-only audit log and stage history, immutable issued invoices, no overlapping deployments, and value checks on money, hours and ranges.
 - Planning documents: PRD, user stories with acceptance criteria, API contract, security model.

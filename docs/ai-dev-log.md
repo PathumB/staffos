@@ -83,3 +83,50 @@ Review notes (owner): what AI got wrong, what I changed
 - **Prisma ignores triggers, checks and exclusion constraints when diffing** (verified with `migrate diff`: empty), so future migrations keep them.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-07 — Auth, users, roles, audit log, app shell
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Build authentication and access control (build order step 2), working directly on `main`.
+
+**AI produced:**
+
+- **API:**
+  - login, rotating refresh cookie with reuse detection, logout, password reset, invitations
+  - lockout after 5 failures, rate limits, common-password check (SecLists NCSC list)
+  - global guards: rate limit → JWT → permissions, deny by default
+  - request context (AsyncLocalStorage) and `AuditService` with secret redaction
+  - users/roles/audit endpoints
+  - pg-boss job queue and a mail provider (console/Ethereal/SMTP), with inline fallback
+- **Shared:** the permission matrix as code, plus the auth/user Zod schemas (also used by the API through a small `createZodDto` pipe).
+- **Seed:** roles and permissions synced from code, plus 8 fictional demo accounts.
+- **Web:**
+  - access token in memory with single-flight refresh, multi-tab logout via `BroadcastChannel`
+  - login, forgot/reset password, accept-invite pages
+  - sidebar shell and dashboard; users table (URL-driven filters, sorting, column toggle), role matrix, audit log
+- **Tests:**
+  - API: 129 tests, including per-role 403s, cross-session refresh-reuse, lockout, CSRF origin, a route-policy test and seed drift
+  - web: 22 tests
+  - E2E: 14 (desktop and 375 px)
+
+**Decisions / deviations (and why):**
+
+- **Guards are registered globally (`APP_GUARD`) rather than per controller**, and deny by default. CLAUDE.md §7 asks for `@UseGuards(...)` on every endpoint; global registration gives the same protection and can't be forgotten. A test enforces a policy on every route.
+- **Wrote a ~60-line Zod DTO pipe** instead of `nestjs-zod`, which doesn't support Nest 12 yet.
+- **TanStack Table pinned to v8:** v9 is a full API rewrite.
+- **A refresh token replayed within 15 s of rotation returns `TOKEN_ROTATED`** instead of revoking the family. Two tabs refreshing at once is normal; real reuse after the window still revokes everything.
+- **Client users are not created from the Users page.** They'll be invited from the client's CRM page, where the company is known.
+- **Locally, E2E assertions wait up to 15 s:** the API talks to Neon in us-east-2 (cold start ~3.5 s). CI uses a local Postgres with a 5 s timeout.
+
+**What AI got wrong and fixed during the task:**
+
+- A heading nested inside another heading on the auth pages (caught by a test).
+- Jest global setup couldn't import the Prisma client; it now runs the seed through `tsx`.
+- The E2E origin was missing from `CORS_ORIGINS`, so refresh was rejected by the CSRF check.
+- Wrong email Zod ordering (validated before trimming).
+- A process filter that stopped the Playwright MCP helper processes along with the test servers.
+
+**Review notes (owner):** _to be written by @pathum_

@@ -66,7 +66,7 @@ Validation errors (400) use `code: "VALIDATION_FAILED"`, and `details.fields` ma
 | --- | --- |
 | 200 / 201 / 202 / 204 | OK / created / accepted (queued) / no content |
 | 400 | `VALIDATION_FAILED`, unknown fields, bad query params, `INVALID_UPLOAD` |
-| 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `TOKEN_REUSED` |
+| 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `TOKEN_REUSED`, `TOKEN_ROTATED` |
 | 403 | `FORBIDDEN` (missing permission) |
 | 404 | `<ENTITY>_NOT_FOUND` (also used for out-of-scope records) |
 | 409 | `INVALID_TRANSITION`, `STALE_VERSION`, `<ENTITY>_DUPLICATE`, `ALREADY_APPLIED`, `DEPLOYMENT_OVERLAP` |
@@ -116,7 +116,7 @@ Notation: `perm:` is the required permission. **(P)** = public. **(S)** = respon
 | Method | Path | Auth | Request | Response |
 | --- | --- | --- | --- | --- |
 | POST | `/auth/login` | (P) | `{ email, password }` | `200 { accessToken, expiresIn: 900, user: Me }` + `Set-Cookie: sr_rt` |
-| POST | `/auth/refresh` | (P, cookie) | — | `200 { accessToken, expiresIn }` + rotated cookie |
+| POST | `/auth/refresh` | (P, cookie) | — | `200 { accessToken, expiresIn, user: Me }` + rotated cookie. `401 TOKEN_ROTATED` = another tab just rotated it: retry once |
 | POST | `/auth/logout` | (P, cookie) | — | `204`, cookie cleared |
 | POST | `/auth/password-reset/request` | (P) | `{ email }` | `202` always |
 | POST | `/auth/password-reset/confirm` | (P) | `{ token, newPassword }` | `204` |
@@ -140,6 +140,7 @@ type Me = {
 | PATCH | `/users/:id` | `users:manage` (name, roles) |
 | POST | `/users/:id/deactivate` | `users:manage` |
 | POST | `/users/:id/reactivate` | `users:manage` |
+| POST | `/users/:id/resend-invitation` | `users:manage`. `202`; only for `INVITED` users |
 | GET | `/roles` | `users:read`. Roles with permissions (matrix screen) |
 
 ### 2.4 Clients (CRM)

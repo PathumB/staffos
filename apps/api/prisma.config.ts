@@ -9,7 +9,8 @@ export default defineConfig({
   schema: '../../prisma/schema.prisma',
   migrations: {
     path: '../../prisma/migrations',
-    seed: 'tsx ../../prisma/seed.ts',
+    // --conditions=source: resolve @staffos/shared to its TS source (no build needed).
+    seed: 'tsx --conditions=source ../../prisma/seed.ts',
   },
   datasource: {
     // Empty is allowed so `prisma generate` works before a database exists; migrate will fail loudly.

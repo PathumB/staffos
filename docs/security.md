@@ -34,7 +34,8 @@ This document is binding for all modules (CLAUDE.md §11).
 | Rate limits | `@nestjs/throttler`: login 10/min/IP, password reset 5/hour/IP, careers apply 5/hour/IP, AI endpoints 20/min/user. |
 | Access token | JWT HS256, 15 min, claims `sub`, `roles`, `clientId?`, `jti`. Kept in memory on the client only; never in `localStorage`/`sessionStorage`. |
 | Refresh token | 256-bit random opaque value; only its SHA-256 hash is stored. 7-day lifetime. Cookie `sr_rt`: `httpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. |
-| Rotation and reuse detection | Each refresh issues a new token in the same family and revokes the old one. Presenting a revoked token revokes the whole family and audits `REFRESH_TOKEN_REUSE`. |
+| Rotation and reuse detection | Each refresh issues a new token in the same family and revokes the old one. Presenting a revoked token revokes the whole family and audits `REFRESH_TOKEN_REUSE`, except within 15 s of its rotation, when it is treated as a multi-tab race (`401 TOKEN_ROTATED`; the client retries with the new cookie). |
+| Token hashing | Refresh, reset, invitation and tracking tokens are stored as HMAC-SHA256 with `JWT_REFRESH_SECRET` as the key, so a database leak alone cannot be used to check or forge tokens. |
 | Password reset | Single-use token, hashed at rest, 30 min, always 202 response. Success revokes all refresh tokens. |
 | Session invalidation | Deactivating a user or changing their password or roles revokes refresh tokens. Access tokens expire within 15 min (accepted risk). |
 | 2FA (stretch) | TOTP (RFC 6238) via `otplib`, optional per user, enforced for `SUPER_ADMIN` when enabled. |
@@ -110,7 +111,7 @@ Roles and permissions are seeded from a single source (`packages/shared/src/perm
 
 `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/password-reset/request`, `POST /auth/password-reset/confirm`, `POST /auth/invitations/accept`, `GET /careers/jobs`, `GET /careers/jobs/:slug`, `POST /careers/jobs/:slug/apply`, `GET /careers/applications/:token`, `POST /careers/applications/:token/data-request`, `GET /health`.
 
-Every other route requires authentication. A test enumerates all routes and fails if a route has neither `@Public()` nor `@RequirePermissions()`.
+Every other route requires authentication. Guards are global and **deny by default**: a route without `@Public()`, `@AuthenticatedOnly()` or `@RequirePermissions()` returns 403. `apps/api/test/routes.spec.ts` enumerates every route and fails on a missing policy or an unlisted public route.
 
 ## 4. Data scoping (IDOR prevention)
 

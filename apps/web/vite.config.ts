@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    // VITE_* variables also come from the root .env.
+    envDir: '../..',
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
       // Use @staffos/shared's TypeScript source directly (fast HMR, no build step).

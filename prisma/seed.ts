@@ -1,13 +1,11 @@
 /**
- * Seed script (CLAUDE.md §9): fictional UAE staffing companies and people only — no real personal data.
- * Data is added as modules land (target in docs/00-master-plan.md §5.5).
+ * Seed entry point (CLAUDE.md §9): fictional UAE staffing companies and people only.
+ * The implementation lives in apps/api/src/seed so it can use the API's dependencies.
  * Run with `pnpm db:seed`.
  */
-async function main(): Promise<void> {
-  console.warn('No seed data yet: models are added module by module.');
-}
+import { runSeed } from '../apps/api/src/seed/main';
 
-main().catch((error: unknown) => {
+runSeed().catch((error: unknown) => {
   console.error(error);
   process.exit(1);
 });

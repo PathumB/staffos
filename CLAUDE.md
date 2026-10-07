@@ -184,7 +184,7 @@ Follow `docs/security.md`. Minimum always:
 
 ## 14. Git workflow
 
-- Branch per module: `feat/<module>`; small focused commits using Conventional Commits (`feat(applications): enforce stage transitions`).
+- Work directly on `main` (owner preference, 2026-10-07); small focused commits using Conventional Commits (`feat(applications): enforce stage transitions`).
 - Never commit `.env`, build output or uploads.
 - After each module: update `docs/ai-dev-log.md` (I will write the review notes) and `CHANGELOG.md` if user-visible.
 
@@ -218,6 +218,7 @@ PORT=3000
 LOG_LEVEL=info
 SWAGGER_ENABLED=true
 DEMO_MODE=false
+VITE_DEMO_MODE=false
 
 DATABASE_URL=
 DATABASE_URL_TEST=

@@ -1,5 +1,6 @@
 import { apiErrorSchema, type ApiError } from '@staffos/shared';
 import type { z } from 'zod';
+import { getAccessToken, refreshSession } from './session';
 
 /** All API calls are same-origin (Vite proxy in dev, Vercel rewrite in prod). */
 export const API_BASE = '/api/v1';
@@ -11,6 +12,16 @@ export class ApiClientError extends Error {
   ) {
     super(error.message);
     this.name = 'ApiClientError';
+  }
+
+  get code(): string {
+    return this.error.code;
+  }
+
+  /** Field errors from a 400 VALIDATION_FAILED response. */
+  get fieldErrors(): Record<string, string[]> {
+    const fields = this.error.details.fields;
+    return fields && typeof fields === 'object' ? (fields as Record<string, string[]>) : {};
   }
 }
 
@@ -29,29 +40,56 @@ export async function toApiError(res: Response): Promise<ApiError> {
   };
 }
 
-type ApiFetchOptions = RequestInit & {
+type ApiFetchOptions = Omit<RequestInit, 'body'> & {
+  body?: unknown;
   /** Non-2xx statuses whose body is still a valid payload (e.g. 503 from /health). */
   acceptStatuses?: number[];
+  /** Send the access token and retry once after refreshing on 401 (default true). */
+  auth?: boolean;
 };
 
+async function send(
+  path: string,
+  { body, headers, auth, ...init }: ApiFetchOptions,
+): Promise<Response> {
+  const token = auth === false ? null : getAccessToken();
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'same-origin',
+    headers: {
+      Accept: 'application/json',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
 /**
- * Fetches a JSON endpoint and validates the response with a Zod schema, so a contract drift
- * shows up as a clear error instead of `undefined` deep in a component.
+ * Calls a JSON endpoint and validates the response with a Zod schema, so contract drift shows up
+ * as a clear error instead of `undefined` deep in a component. Pass `null` as schema for 204s.
  */
 export async function apiFetch<T>(
   path: string,
-  schema: z.ZodType<T>,
-  { acceptStatuses = [], headers, ...init }: ApiFetchOptions = {},
+  schema: z.ZodType<T> | null,
+  options: ApiFetchOptions = {},
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { Accept: 'application/json', ...headers },
-    credentials: 'same-origin',
-  });
+  let res = await send(path, options);
 
-  if (!res.ok && !acceptStatuses.includes(res.status)) {
-    throw new ApiClientError(res.status, await toApiError(res));
+  // Expired access token: refresh once (single-flight) and replay the request.
+  if (res.status === 401 && options.auth !== false && getAccessToken()) {
+    const session = await refreshSession();
+    if (session) {
+      res = await send(path, options);
+    }
   }
 
+  if (!res.ok && !options.acceptStatuses?.includes(res.status)) {
+    throw new ApiClientError(res.status, await toApiError(res));
+  }
+  if (schema === null || res.status === 204 || res.status === 202) {
+    return undefined as T;
+  }
   return schema.parse(await res.json());
 }

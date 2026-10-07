@@ -1,14 +1,16 @@
 import { z } from 'zod';
 
 // `.env` files produce empty strings for unset values; treat them as "not provided".
-const optionalString = z.preprocess((v) => (v === '' ? undefined : v), z.string().optional());
+const blankToUndefined = (v: unknown) => (v === '' ? undefined : v);
+const optionalString = z.preprocess(blankToUndefined, z.string().optional());
 const optionalBool = z.preprocess(
-  (v) => (v === '' ? undefined : v),
+  blankToUndefined,
   z
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
 );
+const secret = z.string().min(32, 'must be at least 32 characters');
 
 /**
  * Environment contract for the API. The app refuses to boot when this fails (security.md §8).
@@ -34,21 +36,39 @@ export const envSchema = z
     SWAGGER_ENABLED: optionalBool,
     DEMO_MODE: optionalBool,
     DATABASE_URL: optionalString,
+    JWT_ACCESS_SECRET: secret,
+    // Keys the HMAC used to hash refresh/reset/invite tokens at rest (a DB leak alone can't
+    // be used to verify or forge them). Name kept from CLAUDE.md §17.
+    JWT_REFRESH_SECRET: secret,
+    MAIL_PROVIDER: z.preprocess(
+      blankToUndefined,
+      z.enum(['console', 'ethereal', 'smtp']).default('console'),
+    ),
+    SMTP_HOST: optionalString,
+    SMTP_PORT: z.preprocess(blankToUndefined, z.coerce.number().int().optional()),
+    SMTP_USER: optionalString,
+    SMTP_PASS: optionalString,
+    MAIL_FROM: z.preprocess(
+      blankToUndefined,
+      z.string().default('StaffOS <no-reply@staffos.local>'),
+    ),
   })
   .superRefine((env, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: 'custom', path: [path], message });
     if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['DATABASE_URL'],
-        message: 'is required in production',
-      });
+      issue('DATABASE_URL', 'is required in production');
     }
     if (env.CORS_ORIGINS.includes('*')) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['CORS_ORIGINS'],
-        message: 'must be an explicit allow-list, not *',
-      });
+      issue('CORS_ORIGINS', 'must be an explicit allow-list, not *');
+    }
+    if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) {
+      issue('JWT_REFRESH_SECRET', 'must differ from JWT_ACCESS_SECRET');
+    }
+    if (env.MAIL_PROVIDER === 'smtp') {
+      for (const key of ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'] as const) {
+        if (!env[key]) issue(key, 'is required when MAIL_PROVIDER=smtp');
+      }
     }
   });
 

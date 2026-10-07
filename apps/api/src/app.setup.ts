@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import type { Env } from './common/config/env';
@@ -20,7 +21,10 @@ export function configureApp(app: NestExpressApplication): void {
   // Render and Vercel sit in front of the API; trust one hop so req.ip is the real client
   // (needed for rate limiting and the audit log).
   app.set('trust proxy', 1);
+  // Express 5 defaults to the 'simple' parser; list endpoints need nested filter[status]=X.
+  app.set('query parser', 'extended');
   app.setGlobalPrefix(API_PREFIX);
+  app.use(cookieParser());
   app.use(
     helmet({
       // security.md §5: the API is never meant to be framed.

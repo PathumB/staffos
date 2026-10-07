@@ -36,3 +36,34 @@ export function parseSort(sort: string): { field: string; direction: 'asc' | 'de
         : { field: part, direction: 'asc' as const },
     );
 }
+
+/**
+ * `sort` restricted to whitelisted fields (api-contract.md §1.2), e.g.
+ * sortSchema(['createdAt', 'email'], '-createdAt') accepts "email,-createdAt".
+ */
+export function sortSchema<const F extends string>(fields: readonly F[], defaultSort: string) {
+  const allowed = new Set<string>(fields);
+  return z
+    .string()
+    .default(defaultSort)
+    .refine(
+      (s) => s.split(',').every((part) => allowed.has(part.replace(/^-/, ''))),
+      `sort must use: ${fields.join(', ')}`,
+    );
+}
+
+export function pageQuery() {
+  return {
+    page: listQuerySchema.shape.page,
+    pageSize: listQuerySchema.shape.pageSize,
+    search: listQuerySchema.shape.search,
+  };
+}
+
+/** Response schema for a paginated list of `item` (api-contract.md §1.2). */
+export function paginatedSchema<T extends z.ZodType>(item: T) {
+  return z.object({
+    data: z.array(item),
+    meta: z.object({ page: z.number().int(), pageSize: z.number().int(), total: z.number().int() }),
+  });
+}

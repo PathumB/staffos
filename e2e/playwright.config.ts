@@ -17,6 +17,8 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  // Locally the API talks to a remote Neon database (cold starts ~3.5 s); CI uses a local Postgres.
+  expect: { timeout: isCI ? 5_000 : 15_000 },
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -38,7 +40,8 @@ export default defineConfig({
           // Wait on the port, not /health: without a database /health answers 503, which
           // Playwright would treat as "not ready".
           port: API_PORT,
-          env: { PORT: String(API_PORT) },
+          // The refresh endpoint checks Origin (CSRF), so the preview origin must be allowed.
+          env: { PORT: String(API_PORT), CORS_ORIGINS: baseURL, APP_URL: baseURL },
           reuseExistingServer: !isCI,
           timeout: 60_000,
         },
