@@ -14,7 +14,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm --filter @staffos/shared build && pnpm -r typecheck",
     "test": "pnpm -r --filter=!e2e test",
     "test:e2e": "pnpm --filter e2e test",
     "db:generate": "pnpm --filter api db:generate",

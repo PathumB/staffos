@@ -2,7 +2,7 @@ import path from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config as loadEnv } from 'dotenv';
 import { PrismaClient } from '../generated/prisma/client';
-import { seedDemo } from './demo';
+import { seedDemo, seedDemoCrm } from './demo';
 import { seedRbac } from './rbac';
 
 /**
@@ -20,6 +20,7 @@ export async function runSeed(): Promise<void> {
     const demoAllowed = process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true';
     if (demoAllowed && process.env.SEED_SCOPE !== 'rbac') {
       await seedDemo(prisma);
+      await seedDemoCrm(prisma);
       console.warn('Seeded demo accounts (see README → Demo accounts).');
     }
   } finally {

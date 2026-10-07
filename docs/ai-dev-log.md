@@ -130,3 +130,48 @@ Review notes (owner): what AI got wrong, what I changed
 - A process filter that stopped the Playwright MCP helper processes along with the test servers.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-07 — CRM: clients and manpower requests
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Build the CRM module (build order step 3) with the recommended defaults. No GitHub remote yet, so commits stay local.
+
+**AI produced:**
+
+- **API, clients:**
+  - clients (TRN unique, archive blocked while deployments are active), contacts (single primary, portal invitation that creates a `CLIENT_USER`), activities and projects
+  - scoping helpers in `common/scoping/crm-scope.ts`
+- **API, manpower requests:**
+  - a pure state machine (`manpower-request.rules.ts`), the headcount threshold from `settings` (default 20)
+  - optimistic locking (`version` → 409 `STALE_VERSION`), and HR-only approval
+  - client users always raise requests for their own company, as `SUBMITTED`
+- **Web:**
+  - clients list and detail (requests, activity timeline, account card, contacts, projects)
+  - requests list and detail, with action dialogs and a request form (`MoneyInput` keeps money in fils)
+- **Seed:** four fictional clients, including "Gulf Build Contracting LLC" with 25 heavy drivers pending HR approval (the master-plan demo).
+- **Tests:** API 196 (+67), web 27 (+5), shared 23 (+5), E2E 18 (+2: request → HR approval, client isolation).
+
+**Decisions / deviations (and why):**
+
+- **Approval uses the request's own status, not the generic `approval_requests` table.** The configurable approval-chain engine is the workflow module (build order step 9); it will take over the decision step.
+- **Client users can create, edit and cancel their own `SUBMITTED` requests but not submit them.** Their account manager reviews and submits (US-MR-03).
+- **The login rate limit is now `LOGIN_RATE_LIMIT_PER_MIN`** (default 10, as security.md requires), raised only for the E2E servers.
+- **E2E now runs against the Neon `test` branch and seeds it**, after E2E runs had written into the dev database (cleaned up).
+- **Local Playwright test timeout is 90 s:** each API call makes several round trips to Neon in us-east-2. CI uses a local Postgres with 30 s.
+- **Root `pnpm typecheck` builds `packages/shared` first:** a fresh CI checkout has no `dist/`.
+
+**What AI got wrong and fixed during the task:**
+
+- PATCH schemas built with `.partial()` on fields with defaults would have reset untouched values; the base fields no longer carry defaults.
+- Money inputs would have shown fils as AED when editing; now handled by `MoneyInput` and a VAT select.
+- Shell-escaping mangled a regex and a template string twice; edits now use the editor for code with backslashes or backticks.
+
+**Known gaps:**
+
+- "HR is notified" / "account manager is notified" (US-MR-01/03) wait for the notifications module; the events are audited meanwhile.
+- `pg` logs a deprecation warning from a library dependency (concurrent `client.query`); our code is unaffected.
+
+**Review notes (owner):** _to be written by @pathum_

@@ -35,6 +35,11 @@ class AcceptInvitationDto extends createZodDto(acceptInvitationSchema) {}
 export const REFRESH_COOKIE = 'sr_rt';
 const COOKIE_PATH = '/api/v1/auth';
 const MINUTE = 60_000;
+/**
+ * Login attempts per IP per minute (security.md §2: 10). Overridable only so the E2E suite, which
+ * signs in many times from one machine, isn't throttled; production keeps the default.
+ */
+const loginLimit = () => Number(process.env.LOGIN_RATE_LIMIT_PER_MIN) || 10;
 
 /**
  * Thin HTTP layer: cookies and status codes only; rules live in AuthService.
@@ -63,7 +68,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: MINUTE } })
+  @Throttle({ default: { limit: loginLimit, ttl: MINUTE } })
   @ApiOperation({ summary: 'Sign in; sets the refresh cookie' })
   @ApiZodBody(loginSchema)
   @ApiZodOkResponse(loginResponseSchema)

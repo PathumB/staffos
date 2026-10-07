@@ -178,7 +178,7 @@ type ClientInput = {
 | POST | `/manpower-requests` (S) | `manpower-requests:write`. `CLIENT_USER`: `clientId` is taken from the token |
 | GET | `/manpower-requests/:id` (S) | `manpower-requests:read` |
 | PATCH | `/manpower-requests/:id` (S) | `manpower-requests:write`. Only in `DRAFT` / `SUBMITTED` |
-| POST | `/manpower-requests/:id/submit` (S) | `manpower-requests:write` → `APPROVED` or `PENDING_APPROVAL` |
+| POST | `/manpower-requests/:id/submit` (S) | `manpower-requests:write` (internal users only; `CLIENT_USER` → 403). `{ version }` → `APPROVED` (auto, headcount ≤ `manpowerApprovalThreshold`) or `PENDING_APPROVAL` |
 | POST | `/manpower-requests/:id/approve` | `manpower-requests:approve`. `{ comment?, version }` |
 | POST | `/manpower-requests/:id/reject` | `manpower-requests:approve`. `{ comment, version }` |
 | POST | `/manpower-requests/:id/cancel` (S) | `manpower-requests:write`. `{ reason, version }` |

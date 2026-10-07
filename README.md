@@ -7,7 +7,7 @@ Client request (CRM) → approval → job published → AI screening → intervi
   → onboarding (HR) → deployment → timesheets → invoice (ERP-lite)
 ```
 
-> Status: **foundation + access control**. Data model, sign-in, roles and permissions, user administration and the audit log are live. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
+> Status: **foundation, access control and CRM**. Sign-in, roles and permissions, user administration, the audit log, clients and manpower requests with HR approval are live. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Tech stack
 
@@ -76,7 +76,7 @@ Invitation and password-reset emails are printed in the API log while `MAIL_PROV
 | `pnpm format` / `pnpm format:check` | Prettier write / check |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm test` | Unit + integration tests (API integration tests against Postgres need `DATABASE_URL_TEST`) |
-| `pnpm test:e2e` | Playwright against the built apps (run `pnpm build` first; first time: `pnpm --filter e2e install-browsers`) |
+| `pnpm test:e2e` | Playwright against the built apps (run `pnpm build` first; first time: `pnpm --filter e2e install-browsers`). Locally it uses the `test` database branch and seeds the demo accounts there |
 | `pnpm build` | Build shared, API and web |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Prisma client, migrations (dev branch), seed data |
 | `pnpm db:migrate:test` | Apply migrations to the test database (`pnpm test` does this automatically) |

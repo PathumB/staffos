@@ -16,7 +16,10 @@ import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ClientsModule } from './modules/clients/clients.module';
 import { HealthModule } from './modules/health/health.module';
+import { ManpowerRequestsModule } from './modules/manpower-requests/manpower-requests.module';
+import { SettingsModule } from './modules/settings/settings.service';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -48,9 +51,12 @@ import { UsersModule } from './modules/users/users.module';
     MailModule,
     AuthCoreModule,
     AuditModule,
+    SettingsModule,
     HealthModule,
     AuthModule,
     UsersModule,
+    ClientsModule,
+    ManpowerRequestsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

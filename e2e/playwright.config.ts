@@ -1,4 +1,8 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// Root .env (DATABASE_URL_TEST etc.) via Node's built-in loader.
+if (existsSync('../.env')) process.loadEnvFile('../.env');
 
 const isCI = Boolean(process.env.CI);
 const WEB_PORT = 4173;
@@ -13,12 +17,14 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${WEB_PORT}`;
  */
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './global-setup.ts',
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'list',
   // Locally the API talks to a remote Neon database (cold starts ~3.5 s); CI uses a local Postgres.
   expect: { timeout: isCI ? 5_000 : 15_000 },
+  timeout: isCI ? 30_000 : 90_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -41,7 +47,17 @@ export default defineConfig({
           // Playwright would treat as "not ready".
           port: API_PORT,
           // The refresh endpoint checks Origin (CSRF), so the preview origin must be allowed.
-          env: { PORT: String(API_PORT), CORS_ORIGINS: baseURL, APP_URL: baseURL },
+          env: {
+            PORT: String(API_PORT),
+            CORS_ORIGINS: baseURL,
+            APP_URL: baseURL,
+            // The suite signs in many times from one IP; production keeps 10/min.
+            LOGIN_RATE_LIMIT_PER_MIN: '200',
+            // Locally E2E writes to the test branch, never the dev database.
+            ...(process.env.DATABASE_URL_TEST && !isCI
+              ? { DATABASE_URL: process.env.DATABASE_URL_TEST }
+              : {}),
+          },
           reuseExistingServer: !isCI,
           timeout: 60_000,
         },

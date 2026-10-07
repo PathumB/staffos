@@ -92,3 +92,212 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
     },
   });
 }
+
+// ── CRM demo data (fictional companies) ──
+
+type DemoClient = {
+  trn: string;
+  name: string;
+  industry: 'CONSTRUCTION' | 'LOGISTICS' | 'FACILITIES' | 'HEALTHCARE';
+  city: string;
+  emirate: 'DUBAI' | 'ABU_DHABI' | 'SHARJAH';
+  contact: { firstName: string; lastName: string; jobTitle: string; email: string; phone: string };
+  requests: {
+    roleTitle: string;
+    category: 'DRIVER' | 'CONSTRUCTION' | 'FACILITIES' | 'HEALTHCARE' | 'ELECTRICAL';
+    headcount: number;
+    location: string;
+    status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED';
+    startInDays: number;
+  }[];
+};
+
+const DEMO_CLIENTS: DemoClient[] = [
+  {
+    trn: DEMO_CLIENT_TRN,
+    name: 'Gulf Build Contracting LLC',
+    industry: 'CONSTRUCTION',
+    city: 'Dubai',
+    emirate: 'DUBAI',
+    contact: {
+      firstName: 'Khalid',
+      lastName: 'Rahman',
+      jobTitle: 'Projects Director',
+      email: 'client@staffos.demo',
+      phone: '+971 4 555 0101',
+    },
+    requests: [
+      {
+        roleTitle: 'Heavy Vehicle Driver',
+        category: 'DRIVER',
+        headcount: 25,
+        location: 'Dubai South',
+        status: 'PENDING_APPROVAL',
+        startInDays: 30,
+      },
+      {
+        roleTitle: 'Site Electrician',
+        category: 'ELECTRICAL',
+        headcount: 6,
+        location: 'Al Quoz',
+        status: 'APPROVED',
+        startInDays: 21,
+      },
+    ],
+  },
+  {
+    trn: '100000000000002',
+    name: 'Al Noor Logistics LLC',
+    industry: 'LOGISTICS',
+    city: 'Abu Dhabi',
+    emirate: 'ABU_DHABI',
+    contact: {
+      firstName: 'Mariam',
+      lastName: 'Haddad',
+      jobTitle: 'Operations Manager',
+      email: 'mariam.haddad@alnoor-logistics.example',
+      phone: '+971 2 555 0102',
+    },
+    requests: [
+      {
+        roleTitle: 'Forklift Operator',
+        category: 'DRIVER',
+        headcount: 8,
+        location: 'KEZAD',
+        status: 'APPROVED',
+        startInDays: 14,
+      },
+    ],
+  },
+  {
+    trn: '100000000000003',
+    name: 'Emirates Facility Services',
+    industry: 'FACILITIES',
+    city: 'Sharjah',
+    emirate: 'SHARJAH',
+    contact: {
+      firstName: 'Sanjay',
+      lastName: 'Iyer',
+      jobTitle: 'HR Lead',
+      email: 'sanjay.iyer@efs.example',
+      phone: '+971 6 555 0103',
+    },
+    requests: [
+      {
+        roleTitle: 'HVAC Technician',
+        category: 'FACILITIES',
+        headcount: 12,
+        location: 'Sharjah Industrial Area',
+        status: 'DRAFT',
+        startInDays: 45,
+      },
+    ],
+  },
+  {
+    trn: '100000000000004',
+    name: 'Seha Care Medical Centre',
+    industry: 'HEALTHCARE',
+    city: 'Dubai',
+    emirate: 'DUBAI',
+    contact: {
+      firstName: 'Aisha',
+      lastName: 'Karim',
+      jobTitle: 'Nursing Director',
+      email: 'aisha.karim@sehacare.example',
+      phone: '+971 4 555 0104',
+    },
+    requests: [
+      {
+        roleTitle: 'Registered Nurse',
+        category: 'HEALTHCARE',
+        headcount: 5,
+        location: 'Jumeirah',
+        status: 'APPROVED',
+        startInDays: 20,
+      },
+    ],
+  },
+];
+
+/** Clients, contacts, a project and requests in each state (idempotent: skips clients that have requests). */
+export async function seedDemoCrm(prisma: PrismaClient): Promise<void> {
+  const am = await prisma.user.findUniqueOrThrow({ where: { email: 'am@staffos.demo' } });
+  const hr = await prisma.user.findUniqueOrThrow({ where: { email: 'hr@staffos.demo' } });
+  const day = 24 * 60 * 60 * 1000;
+  const dateIn = (days: number) =>
+    new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z').getTime() + days * day;
+
+  for (const c of DEMO_CLIENTS) {
+    const client = await prisma.client.upsert({
+      where: { trn: c.trn },
+      update: {},
+      create: {
+        trn: c.trn,
+        name: c.name,
+        industry: c.industry,
+        city: c.city,
+        emirate: c.emirate,
+        accountManagerId: am.id,
+        createdById: am.id,
+      },
+    });
+    if ((await prisma.manpowerRequest.count({ where: { clientId: client.id } })) > 0) continue;
+
+    const portalUser = await prisma.user.findUnique({ where: { email: c.contact.email } });
+    await prisma.clientContact.create({
+      data: {
+        ...c.contact,
+        clientId: client.id,
+        isPrimary: true,
+        portalUserId: portalUser?.id,
+        createdById: am.id,
+      },
+    });
+    await prisma.activity.create({
+      data: {
+        clientId: client.id,
+        type: 'MEETING',
+        subject: 'Quarterly workforce planning',
+        body: 'Reviewed upcoming project demand.',
+        createdById: am.id,
+      },
+    });
+    if (c.industry === 'CONSTRUCTION') {
+      await prisma.project.create({
+        data: {
+          clientId: client.id,
+          name: 'Dubai South Logistics Hub',
+          code: 'DSLH',
+          location: 'Dubai South',
+          emirate: 'DUBAI',
+          status: 'ACTIVE',
+          createdById: am.id,
+        },
+      });
+    }
+    for (const r of c.requests) {
+      const submitted = r.status !== 'DRAFT';
+      await prisma.manpowerRequest.create({
+        data: {
+          clientId: client.id,
+          roleTitle: r.roleTitle,
+          category: r.category,
+          headcount: r.headcount,
+          location: r.location,
+          emirate: c.emirate,
+          startDate: new Date(dateIn(r.startInDays)),
+          durationMonths: 12,
+          billRateMinFils: 4000,
+          billRateMaxFils: 6000,
+          status: r.status,
+          submittedAt: submitted ? new Date() : null,
+          decidedAt: r.status === 'APPROVED' ? new Date() : null,
+          decidedById: r.status === 'APPROVED' && r.headcount > 20 ? hr.id : null,
+          decisionComment:
+            r.status === 'APPROVED' && r.headcount <= 20 ? 'Auto-approved: headcount ≤ 20.' : null,
+          createdById: am.id,
+        },
+      });
+    }
+  }
+}

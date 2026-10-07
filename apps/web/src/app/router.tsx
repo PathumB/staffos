@@ -11,6 +11,10 @@ import {
   ForgotPasswordPage,
   ResetPasswordPage,
 } from '@/features/auth/pages/PasswordPages';
+import { ClientDetailPage } from '@/features/clients/pages/ClientDetailPage';
+import { ClientsPage } from '@/features/clients/pages/ClientsPage';
+import { RequestDetailPage } from '@/features/manpower-requests/pages/RequestDetailPage';
+import { RequestsPage } from '@/features/manpower-requests/pages/RequestsPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './layout/AppLayout';
@@ -35,6 +39,38 @@ export const routes = [
         element: <AppLayout />,
         children: [
           { path: '/', element: <DashboardPage /> },
+          {
+            path: '/clients',
+            element: (
+              <RequirePermission permissions={['clients:read']}>
+                <ClientsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/clients/:id',
+            element: (
+              <RequirePermission permissions={['clients:read']}>
+                <ClientDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/requests',
+            element: (
+              <RequirePermission permissions={['manpower-requests:read']}>
+                <RequestsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/requests/:id',
+            element: (
+              <RequirePermission permissions={['manpower-requests:read']}>
+                <RequestDetailPage />
+              </RequirePermission>
+            ),
+          },
           {
             path: '/admin/users',
             element: (
