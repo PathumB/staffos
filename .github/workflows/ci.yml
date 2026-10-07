@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build, E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # CLAUDE.md §4: Postgres service container in CI only (no Docker locally).
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: staffos
+          POSTGRES_PASSWORD: staffos
+          POSTGRES_DB: staffos_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U staffos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      DATABASE_URL_TEST: postgresql://staffos:staffos@localhost:5432/staffos_test
+      # E2E boots the built API, which reads DATABASE_URL.
+      DATABASE_URL: postgresql://staffos:staffos@localhost:5432/staffos_test
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations to the test database
+        run: pnpm --filter api db:migrate:deploy
+
+      - name: Unit + integration tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Dependency audit (production deps)
+        run: pnpm audit --prod --audit-level high
+
+      - name: Install Playwright browser
+        run: pnpm --filter e2e install-browsers
+
+      - name: E2E tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

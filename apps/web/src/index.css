@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens (CLAUDE.md §10). Tailwind v4 keeps theme config in CSS: this file *is* the
+ * Tailwind config. One accent colour (indigo), slate neutrals, light + dark.
+ * Foreground/background pairs are chosen for WCAG AA contrast (≥ 4.5:1 for body text).
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.5rem;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --ring: #4f46e5;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+}
+
+.dark {
+  --background: #0b1120;
+  --foreground: #e2e8f0;
+  --card: #0f172a;
+  --card-foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1e293b;
+  --input: #334155;
+
+  --primary: #818cf8;
+  --primary-foreground: #1e1b4b;
+  --ring: #818cf8;
+
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}

@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+  - e2e
+
+# Native build scripts allowed to run on install (pnpm 10 blocks them by default).
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - prisma
+  - esbuild
+  - '@nestjs/core'
+
+# Reviewed and not needed: prebuilt binaries ship via optional deps; scarf is install telemetry.
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - '@scarf/scarf'
+  - unrs-resolver

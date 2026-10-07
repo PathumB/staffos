@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+apps/api/src/generated
+docs/*.pdf
+playwright-report
+test-results
+
+# Markdown is hand-formatted (owner-authored docs; wide tables)
+*.md

@@ -1,0 +1,14 @@
+// StaffOS data model — source of truth (CLAUDE.md §2, §9).
+// Models are added module by module; see docs/00-master-plan.md §4.3 for the planned tables.
+// Database URL is configured in apps/api/prisma.config.ts (Prisma 7).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../apps/api/src/generated/prisma"
+  // The API compiles to CommonJS (NestJS template), so generate CJS-compatible code.
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}

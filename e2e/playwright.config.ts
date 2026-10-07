@@ -1,0 +1,53 @@
+import { defineConfig, devices } from '@playwright/test';
+
+const isCI = Boolean(process.env.CI);
+const WEB_PORT = 4173;
+// Override when port 3000 is taken by another local app.
+const API_PORT = Number(process.env.E2E_API_PORT ?? 3000);
+const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${WEB_PORT}`;
+
+/**
+ * Runs against the built apps (`pnpm build` first): the API on :3000 (or E2E_API_PORT) and
+ * `vite preview` on :4173, which proxies /api like production.
+ * Set E2E_BASE_URL to test a deployed environment instead.
+ */
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  use: {
+    baseURL,
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
+    // CLAUDE.md §10: every screen must work down to 375 px.
+    {
+      name: 'mobile-375',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 375, height: 812 }, isMobile: true },
+    },
+  ],
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : [
+        {
+          command: 'pnpm --filter api start',
+          // Wait on the port, not /health: without a database /health answers 503, which
+          // Playwright would treat as "not ready".
+          port: API_PORT,
+          env: { PORT: String(API_PORT) },
+          reuseExistingServer: !isCI,
+          timeout: 60_000,
+        },
+        {
+          command: `pnpm --filter web preview --port ${WEB_PORT} --strictPort`,
+          url: baseURL,
+          env: { API_URL: `http://127.0.0.1:${API_PORT}` },
+          reuseExistingServer: !isCI,
+          timeout: 60_000,
+        },
+      ],
+});

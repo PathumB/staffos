@@ -1,0 +1,45 @@
+# Render Blueprint for the API (CLAUDE.md §4): free web service, native Node build, no Docker.
+# Deploys are triggered by .github/workflows/deploy.yml through a deploy hook, after CI passes.
+services:
+  - type: web
+    name: staffos-api
+    runtime: node
+    plan: free
+    # Same AWS region as the Neon database (us-east-2) to keep API↔DB latency low.
+    region: ohio
+    branch: main
+    autoDeploy: false
+    healthCheckPath: /api/v1/health
+    # --prod=false: NODE_ENV=production would otherwise skip devDependencies needed to build
+    # (Nest CLI, Prisma CLI, TypeScript).
+    buildCommand: >-
+      npm i -g pnpm@10.34.6 &&
+      pnpm install --frozen-lockfile --prod=false &&
+      pnpm --filter @staffos/shared build &&
+      pnpm --filter api build
+    startCommand: pnpm --filter api start
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: SWAGGER_ENABLED
+        value: 'true'
+      - key: APP_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_READONLY
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: WEBHOOK_SIGNING_SECRET
+        generateValue: true
+      - key: SENTRY_DSN
+        sync: false

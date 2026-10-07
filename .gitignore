@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+apps/api/src/generated/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Uploads (LocalDiskStorage)
+uploads/
+storage/
+
+# Tests
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Logs and OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local notes containing secrets (never commit)
+readme.txt

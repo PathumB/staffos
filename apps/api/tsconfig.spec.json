@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Jest runs CommonJS; force CJS output even for files from the ESM shared package.
+    "module": "commonjs",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "incremental": false
+  }
+}
