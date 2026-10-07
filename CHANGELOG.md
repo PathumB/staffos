@@ -8,6 +8,8 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Data model: 55 tables across identity, CRM, recruitment, HR, onboarding, ERP-lite, workflow, AI and platform, with an ERD in `docs/erd.md`.
+- Database-level integrity: append-only audit log and stage history, immutable issued invoices, no overlapping deployments, and value checks on money, hours and ranges.
 - Planning documents: PRD, user stories with acceptance criteria, API contract, security model.
 - Monorepo scaffold: `apps/api` (NestJS), `apps/web` (React + Vite), `packages/shared`, `e2e` (Playwright).
 - `GET /api/v1/health`: public health check with database status, used by uptime monitoring.

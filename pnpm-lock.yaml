@@ -111,12 +111,18 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.19.1
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
       jest:
         specifier: ^30.5.2
         version: 30.5.2(@types/node@24.19.1)
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
       pino-pretty:
         specifier: ^13.2.0
         version: 13.2.0

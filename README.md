@@ -61,7 +61,8 @@ Without a database, everything still starts: `/health` reports `db: error` (HTTP
 | `pnpm test` | Unit + integration tests (API integration tests against Postgres need `DATABASE_URL_TEST`) |
 | `pnpm test:e2e` | Playwright against the built apps (run `pnpm build` first; first time: `pnpm --filter e2e install-browsers`) |
 | `pnpm build` | Build shared, API and web |
-| `pnpm db:generate` / `db:migrate` / `db:seed` | Prisma client, migrations, seed data |
+| `pnpm db:generate` / `db:migrate` / `db:seed` | Prisma client, migrations (dev branch), seed data |
+| `pnpm db:migrate:test` | Apply migrations to the test database (`pnpm test` does this automatically) |
 
 ## Repository layout
 
@@ -82,6 +83,7 @@ docs/             PRD, user stories, API contract, security, master plan
 - [User stories and acceptance criteria](docs/02-user-stories.md)
 - [API contract](docs/api-contract.md)
 - [Security](docs/security.md)
+- [ERD / data model](docs/erd.md)
 - [AI development log](docs/ai-dev-log.md)
 
 ## Deployment

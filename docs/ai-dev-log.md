@@ -48,3 +48,38 @@ Review notes (owner): what AI got wrong, what I changed
 - **The Prisma schema has no models yet.** The data model is a separate design task.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-07 — Data model (`feat/data-model`)
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Design the full schema from master plan §4.3 following CLAUDE.md §9; owner approved the recommended defaults (documents with two real FKs + exactly-one CHECK, 32-bit integer money, full schema now).
+
+**AI produced:**
+
+- `prisma/schema.prisma`: 55 tables, 39 enums, UUID v7 keys, snake_case mapping, every FK indexed
+- Migration `init` (Prisma-generated) and `integrity` (hand-written SQL):
+  - append-only triggers on `audit_logs` and `application_stage_history`
+  - immutable issued invoices and their lines
+  - a `btree_gist` exclusion constraint against overlapping deployments
+  - exactly-one-owner checks, and value checks (headcount, money, Monday weeks, 0–16 h/day, AI score bounds)
+- `packages/shared/src/enums.ts` (mirrors the DB enums) and `domain.ts` (pipeline order, `allowedNextStages`, identity document types)
+- Tests:
+  - an enum drift test (shared ↔ Prisma)
+  - 11 real-Postgres integrity tests, each in a rolled-back transaction, including "every FK has an index"
+  - Jest global setup that migrates the test DB
+- `docs/erd.md`: overview plus 8 Mermaid area diagrams, all parsed with Mermaid 11
+
+**Decisions / deviations (and why):**
+
+- **No date of birth, gender or photo columns on candidates:** data minimisation, and they must never reach a matching prompt.
+- **`client_id` / `employee_id` are copied onto jobs, deployments and timesheets** so data-scoping queries don't need joins. Services set them from the parent record.
+- **Generic links without FKs:** `tasks`, `ai_requests`, `ai_results` and `audit_logs` use `entity_type` / `entity_id` with no FK, because they can point at any table. Documented in the schema.
+- **Owner-less one-time setup tables have no `created_by_id`:** departments, positions, settings, sequences.
+- **AI cost is stored as integer micro-dollars,** so there are no floats anywhere.
+- **Prisma 7 `migrate dev` no longer runs `generate`,** so `pnpm db:migrate` now runs both.
+- **Prisma ignores triggers, checks and exclusion constraints when diffing** (verified with `migrate diff`: empty), so future migrations keep them.
+
+**Review notes (owner):** _to be written by @pathum_

@@ -19,7 +19,8 @@
     "test:e2e": "pnpm --filter e2e test",
     "db:generate": "pnpm --filter api db:generate",
     "db:migrate": "pnpm --filter api db:migrate",
-    "db:seed": "pnpm --filter api db:seed"
+    "db:seed": "pnpm --filter api db:seed",
+    "db:migrate:test": "pnpm --filter api db:migrate:test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

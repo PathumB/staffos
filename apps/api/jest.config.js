@@ -6,6 +6,7 @@ module.exports = {
   testRegex: String.raw`.*\.spec\.ts$`,
   roots: ['<rootDir>/src', '<rootDir>/test'],
   setupFiles: ['<rootDir>/test/setup-env.ts'],
+  globalSetup: '<rootDir>/test/global-setup.ts',
   transform: {
     [String.raw`^.+\.ts$`]: ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
