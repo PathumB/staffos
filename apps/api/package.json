@@ -16,7 +16,8 @@
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:migrate:test": "prisma migrate deploy --config prisma.test.config.ts"
+    "db:migrate:test": "prisma migrate deploy --config prisma.test.config.ts",
+    "db:studio": "prisma studio --port 5555"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",

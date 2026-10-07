@@ -89,6 +89,7 @@ pnpm --filter api dev
 pnpm --filter web dev
 pnpm db:migrate          # prisma migrate dev + generate (dev branch)
 pnpm db:migrate:test     # apply migrations to DATABASE_URL_TEST (pnpm test also does this)
+pnpm db:studio           # browse the dev database at http://localhost:5555
 pnpm db:seed
 pnpm lint
 pnpm format              # prettier --write (format:check in CI)

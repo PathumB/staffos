@@ -63,6 +63,7 @@ Without a database, everything still starts: `/health` reports `db: error` (HTTP
 | `pnpm build` | Build shared, API and web |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Prisma client, migrations (dev branch), seed data |
 | `pnpm db:migrate:test` | Apply migrations to the test database (`pnpm test` does this automatically) |
+| `pnpm db:studio` | Browse the dev database in Prisma Studio (http://localhost:5555) |
 
 ## Repository layout
 
