@@ -9,7 +9,7 @@ name: Deploy
 # Required repository secrets:
 #   PROD_DATABASE_URL       Neon `main` branch connection string (used for migrations)
 #   RENDER_DEPLOY_HOOK_URL  Render → staffos-api → Settings → Deploy Hook
-#   PROD_API_HEALTH_URL     e.g. https://staffos-api.onrender.com/api/v1/health
+#   PROD_API_HEALTH_URL     e.g. https://staffos-api-cjlm.onrender.com/api/v1/health
 
 on:
   workflow_run:

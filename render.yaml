@@ -10,14 +10,15 @@ services:
     branch: main
     autoDeploy: false
     healthCheckPath: /api/v1/health
+    # Render's global npm folder is read-only, so pnpm runs through npx (pinned version).
     # --prod=false: NODE_ENV=production would otherwise skip devDependencies needed to build
     # (Nest CLI, Prisma CLI, TypeScript).
     buildCommand: >-
-      npm i -g pnpm@10.34.6 &&
-      pnpm install --frozen-lockfile --prod=false &&
-      pnpm --filter @staffos/shared build &&
-      pnpm --filter api build
-    startCommand: pnpm --filter api start
+      npx --yes pnpm@10.34.6 install --frozen-lockfile --prod=false &&
+      npx --yes pnpm@10.34.6 --filter @staffos/shared build &&
+      npx --yes pnpm@10.34.6 --filter api build
+    # Plain node at start-up: no package-manager download on every cold start.
+    startCommand: cd apps/api && node dist/main
     envVars:
       - key: NODE_VERSION
         value: '24'
@@ -46,9 +47,9 @@ services:
       # Portfolio deploy: seed and show the fictional demo accounts.
       - key: DEMO_MODE
         value: 'true'
-      # Email through Brevo's free SMTP (CLAUDE.md §4).
+      # Email: console (logged) until a Brevo SMTP key is added; then set smtp + SMTP_PASS.
       - key: MAIL_PROVIDER
-        value: smtp
+        value: console
       - key: SMTP_HOST
         value: smtp-relay.brevo.com
       - key: SMTP_PORT
