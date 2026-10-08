@@ -43,3 +43,35 @@ services:
         generateValue: true
       - key: SENTRY_DSN
         sync: false
+      # Portfolio deploy: seed and show the fictional demo accounts.
+      - key: DEMO_MODE
+        value: 'true'
+      # Email through Brevo's free SMTP (CLAUDE.md §4).
+      - key: MAIL_PROVIDER
+        value: smtp
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Uploads: switch to supabase (free, private bucket) before real use; Render's disk is
+      # wiped on every deploy and restart.
+      - key: STORAGE_PROVIDER
+        value: local
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: documents
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: LLM_DEFAULT_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
