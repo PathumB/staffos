@@ -442,7 +442,12 @@ export async function seedDemoRecruitment(prisma: PrismaClient): Promise<void> {
 
   for (const [index, plan] of DEMO_PIPELINE.entries()) {
     const request = await prisma.manpowerRequest.findFirst({
-      where: { roleTitle: plan.roleTitle, status: 'APPROVED' },
+      // Demo clients only: in CI the integration tests create look-alike requests first.
+      where: {
+        roleTitle: plan.roleTitle,
+        status: 'APPROVED',
+        client: { name: { in: DEMO_CLIENTS.map((c) => c.name) } },
+      },
     });
     if (!request || (await prisma.job.count({ where: { manpowerRequestId: request.id } })) > 0)
       continue;
