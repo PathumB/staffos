@@ -19,8 +19,18 @@ export class LlmProviderError extends Error {
   constructor(
     readonly code: 'PROVIDER_ERROR' | 'RATE_LIMITED' | 'NOT_CONFIGURED',
     message: string,
+    /** HTTP status from the provider, when there was one (logged as PROVIDER_<status>). */
+    readonly status?: number,
   ) {
     super(message);
+  }
+
+  /** Overload and server errors are worth another try; 4xx (bad key, bad request) are not. */
+  get retryable(): boolean {
+    return (
+      this.code === 'RATE_LIMITED' ||
+      (this.code === 'PROVIDER_ERROR' && (this.status ?? 500) >= 500)
+    );
   }
 }
 
@@ -49,7 +59,9 @@ async function post(
   });
   if (res.status === 429)
     throw new LlmProviderError('RATE_LIMITED', 'Provider rate limit or quota reached');
-  if (!res.ok) throw new LlmProviderError('PROVIDER_ERROR', `Provider returned ${res.status}`);
+  if (!res.ok) {
+    throw new LlmProviderError('PROVIDER_ERROR', `Provider returned ${res.status}`, res.status);
+  }
   return (await res.json()) as Record<string, unknown>;
 }
 

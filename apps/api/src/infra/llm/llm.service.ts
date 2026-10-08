@@ -77,7 +77,11 @@ export class LlmService {
     }
     const prompt = this.render(opts.prompt, opts.vars);
     let lastCode = 'INVALID_OUTPUT';
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
+    // Invalid output: one retry (CLAUDE.md §12). Overload/5xx/timeouts: up to 3 attempts with
+    // 2 s and 4 s backoff, since providers' free tiers are often briefly overloaded.
+    let invalid = 0;
+    let failures = 0;
+    for (;;) {
       const started = Date.now();
       try {
         const out = await this.provider.complete(prompt, AbortSignal.timeout(TIMEOUT_MS));
@@ -95,18 +99,24 @@ export class LlmService {
         if (parsed.success)
           return { data: parsed.data, aiRequestId: id, promptVersion: opts.prompt };
         lastCode = 'INVALID_OUTPUT';
+        if (++invalid >= 2) break;
       } catch (error) {
+        const timeout = error instanceof Error && error.name === 'TimeoutError';
         const code =
           error instanceof LlmProviderError
-            ? error.code
-            : error instanceof Error && error.name === 'TimeoutError'
+            ? error.status
+              ? `PROVIDER_${error.status}`
+              : error.code
+            : timeout
               ? 'TIMEOUT'
               : 'PROVIDER_ERROR';
         lastCode = code;
+        failures += 1;
         await this.log(opts, 'FAILED', 0, 0, Date.now() - started, userId, code);
-        this.logger.warn({ feature: opts.feature, code, attempt }, 'LLM call failed');
-        if (code === 'NOT_CONFIGURED') break;
-        await new Promise((r) => setTimeout(r, 1_000 * attempt));
+        this.logger.warn({ feature: opts.feature, code, attempt: failures }, 'LLM call failed');
+        const retryable = timeout || !(error instanceof LlmProviderError) || error.retryable;
+        if (!retryable || failures >= 3) break;
+        await new Promise((r) => setTimeout(r, 2_000 * failures));
       }
     }
     this.logger.warn({ feature: opts.feature, code: lastCode }, 'AI unavailable after retries');
