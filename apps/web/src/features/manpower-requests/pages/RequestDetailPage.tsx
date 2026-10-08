@@ -4,7 +4,7 @@ import {
   JOB_CATEGORY_LABELS,
   type ManpowerRequest,
 } from '@staffos/shared';
-import { ArrowLeft, Check, Pencil, Send, X } from 'lucide-react';
+import { ArrowLeft, Briefcase, Check, Pencil, Send, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { ErrorState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { JobFormDialog } from '@/features/recruitment/components/JobFormDialog';
 import { ApiClientError } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/format';
 import { type RequestAction, useRequest, useRequestAction } from '../api';
@@ -88,6 +89,7 @@ export function RequestDetailPage() {
   const action = useRequestAction();
   const [dialog, setDialog] = useState<RequestAction | null>(null);
   const [editing, setEditing] = useState(false);
+  const [openingJob, setOpeningJob] = useState(false);
 
   if (request.error)
     return <ErrorState error={request.error} onRetry={() => void request.refetch()} />;
@@ -152,6 +154,12 @@ export function RequestDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {can('jobs:write') && r.status === 'APPROVED' && (
+            <Button onClick={() => setOpeningJob(true)}>
+              <Briefcase aria-hidden />
+              Open job
+            </Button>
+          )}
           {actions.edit && (
             <Button variant="outline" onClick={() => setEditing(true)}>
               <Pencil aria-hidden />
@@ -256,6 +264,7 @@ export function RequestDetailPage() {
         />
       )}
       <RequestFormDialog open={editing} onOpenChange={setEditing} request={r} />
+      <JobFormDialog open={openingJob} onOpenChange={setOpeningJob} request={r} />
     </>
   );
 }

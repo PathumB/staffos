@@ -301,3 +301,208 @@ export async function seedDemoCrm(prisma: PrismaClient): Promise<void> {
     }
   }
 }
+
+// ── Recruitment demo data (fictional people) ──
+
+const DEMO_CANDIDATES = [
+  {
+    firstName: 'Rania',
+    lastName: 'Saeed',
+    title: 'Warehouse Operator',
+    years: 5,
+    skills: ['Forklift licence', 'Inventory systems'],
+  },
+  {
+    firstName: 'Vikram',
+    lastName: 'Rao',
+    title: 'Forklift Driver',
+    years: 7,
+    skills: ['Forklift licence', 'Reach truck'],
+  },
+  {
+    firstName: 'Samuel',
+    lastName: 'Owusu',
+    title: 'Logistics Assistant',
+    years: 2,
+    skills: ['Inventory systems'],
+  },
+  {
+    firstName: 'Imran',
+    lastName: 'Qureshi',
+    title: 'Electrician',
+    years: 9,
+    skills: ['LV wiring', 'DEWA approval'],
+  },
+  {
+    firstName: 'Marco',
+    lastName: 'Silva',
+    title: 'Site Electrician',
+    years: 4,
+    skills: ['LV wiring', 'Cable pulling'],
+  },
+  {
+    firstName: 'Ahmed',
+    lastName: 'Nasser',
+    title: 'Electrical Technician',
+    years: 3,
+    skills: ['Panel maintenance'],
+  },
+  {
+    firstName: 'Grace',
+    lastName: 'Achieng',
+    title: 'Registered Nurse',
+    years: 6,
+    skills: ['DHA licence', 'ICU'],
+  },
+  {
+    firstName: 'Maria',
+    lastName: 'Santos',
+    title: 'Staff Nurse',
+    years: 4,
+    skills: ['DHA licence', 'Paediatrics'],
+  },
+  { firstName: 'Leila', lastName: 'Karimi', title: 'Nurse', years: 2, skills: ['BLS'] },
+  {
+    firstName: 'Tomas',
+    lastName: 'Novak',
+    title: 'Warehouse Supervisor',
+    years: 10,
+    skills: ['Forklift licence', 'Team leadership'],
+  },
+] as const;
+
+/** stage path per candidate index, e.g. 'SHORTLISTED' walks APPLIED → SCREENING → SHORTLISTED. */
+const DEMO_PIPELINE: {
+  roleTitle: string;
+  skills: { name: string; minYears?: number }[];
+  candidates: [number, string][];
+}[] = [
+  {
+    roleTitle: 'Forklift Operator',
+    skills: [{ name: 'Forklift licence', minYears: 2 }],
+    candidates: [
+      [0, 'INTERVIEW'],
+      [1, 'SHORTLISTED'],
+      [2, 'APPLIED'],
+      [9, 'SCREENING'],
+    ],
+  },
+  {
+    roleTitle: 'Site Electrician',
+    skills: [{ name: 'LV wiring', minYears: 3 }, { name: 'DEWA approval' }],
+    candidates: [
+      [3, 'OFFER'],
+      [4, 'SCREENING'],
+      [5, 'REJECTED'],
+    ],
+  },
+  {
+    roleTitle: 'Registered Nurse',
+    skills: [{ name: 'DHA licence', minYears: 2 }],
+    candidates: [
+      [6, 'SHORTLISTED'],
+      [7, 'APPLIED'],
+      [8, 'APPLIED'],
+    ],
+  },
+];
+
+const FORWARD = ['APPLIED', 'SCREENING', 'SHORTLISTED', 'INTERVIEW', 'OFFER'] as const;
+
+/** Open jobs on the approved demo requests with candidates spread across the pipeline. */
+export async function seedDemoRecruitment(prisma: PrismaClient): Promise<void> {
+  const hr = await prisma.user.findUniqueOrThrow({ where: { email: 'hr@staffos.demo' } });
+  const recruiter = await prisma.user.findUniqueOrThrow({
+    where: { email: 'recruiter@staffos.demo' },
+  });
+  const hm = await prisma.user.findUniqueOrThrow({ where: { email: 'hm@staffos.demo' } });
+  const day = 86_400_000;
+
+  const candidates = [];
+  for (const c of DEMO_CANDIDATES) {
+    const email = `${c.firstName}.${c.lastName}@candidates.example`.toLowerCase();
+    candidates.push(
+      (await prisma.candidate.findFirst({ where: { email } })) ??
+        (await prisma.candidate.create({
+          data: {
+            firstName: c.firstName,
+            lastName: c.lastName,
+            email,
+            currentTitle: c.title,
+            totalExperienceMonths: c.years * 12,
+            location: 'Dubai',
+            source: 'MANUAL',
+            languages: ['English'],
+            createdById: recruiter.id,
+            skills: { create: c.skills.map((name) => ({ name, years: Math.min(c.years, 5) })) },
+          },
+        })),
+    );
+  }
+
+  for (const [index, plan] of DEMO_PIPELINE.entries()) {
+    const request = await prisma.manpowerRequest.findFirst({
+      where: { roleTitle: plan.roleTitle, status: 'APPROVED' },
+    });
+    if (!request || (await prisma.job.count({ where: { manpowerRequestId: request.id } })) > 0)
+      continue;
+    const publishedAt = new Date(Date.now() - (20 + index * 5) * day);
+    const job = await prisma.job.create({
+      data: {
+        manpowerRequestId: request.id,
+        clientId: request.clientId,
+        title: request.roleTitle,
+        slug: `${request.roleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-demo${index}`,
+        description: `We are hiring ${request.headcount} ${request.roleTitle.toLowerCase()}s for a long-term project in ${request.location}.`,
+        category: request.category,
+        location: request.location,
+        emirate: request.emirate,
+        headcount: request.headcount,
+        status: 'OPEN',
+        publishedAt,
+        hiringManagerId: hm.id,
+        createdById: hr.id,
+        recruiters: { create: [{ userId: recruiter.id }] },
+        skills: {
+          create: plan.skills.map((s) => ({
+            name: s.name,
+            weight: 'MUST' as const,
+            minYears: s.minYears,
+          })),
+        },
+      },
+    });
+
+    for (const [candidateIndex, target] of plan.candidates) {
+      const rejected = target === 'REJECTED';
+      const path = rejected
+        ? ['APPLIED', 'SCREENING']
+        : FORWARD.slice(0, FORWARD.indexOf(target as (typeof FORWARD)[number]) + 1);
+      const stages = rejected ? [...path, 'REJECTED'] : path;
+      // Spread history over the days since publishing so time-in-stage looks realistic.
+      const at = (i: number) => new Date(publishedAt.getTime() + (i * 3 + 1) * day);
+      const app = await prisma.application.create({
+        data: {
+          candidateId: candidates[candidateIndex]!.id,
+          jobId: job.id,
+          stage: stages.at(-1) as 'APPLIED',
+          version: stages.length,
+          appliedAt: at(0),
+          stageChangedAt: at(stages.length - 1),
+          rejectReason: rejected ? 'Missing DEWA approval' : null,
+          createdById: recruiter.id,
+        },
+      });
+      await prisma.applicationStageHistory.createMany({
+        data: stages.map((toStage, i) => ({
+          applicationId: app.id,
+          fromStage: i === 0 ? null : (stages[i - 1] as 'APPLIED'),
+          toStage: toStage as 'APPLIED',
+          reason: toStage === 'REJECTED' ? 'Missing DEWA approval' : null,
+          changedById: recruiter.id,
+          changedAt: at(i),
+        })),
+      });
+    }
+  }
+}

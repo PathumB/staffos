@@ -175,3 +175,51 @@ Review notes (owner): what AI got wrong, what I changed
 - `pg` logs a deprecation warning from a library dependency (concurrent `client.query`); our code is unaffected.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Recruitment (ATS) part 1: jobs, candidates, applications, pipeline
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Build recruitment part 1 with the recommended defaults. The repo is now on GitHub (`PathumB/staffos`), so CI runs on every push.
+
+**AI produced:**
+
+- **API:**
+  - jobs (open from an APPROVED request only; validated recruiters and hiring manager; skills; DRAFT → OPEN ⇄ ON_HOLD → CLOSED with optimistic locking)
+  - candidates (duplicate detection by email/phone that only reveals the match to someone allowed to see it; HR-only `force` and delete)
+  - applications (add to OPEN jobs; `POST /applications/:id/transition` with the shared `allowedNextStages` rule, a reason for exits, accepted offer required for HIRED, append-only history in the same transaction)
+  - a pipeline endpoint, and `common/scoping/recruitment-scope.ts`
+- **Web:**
+  - jobs list and detail with the Kanban (`@dnd-kit/core`, MIT, for pointer, touch and keyboard drag, plus a "Move to" menu); only legal columns light up
+  - job form (recruiters, hiring manager, skills editor, salary as `MoneyInput`), "Open job" on approved requests
+  - candidates list and detail, the add-to-job and add-candidate dialogs
+- **Seed:** 10 fictional candidates across 3 open jobs, with stage history spread over time.
+- **Tests:**
+  - API 234 (+38): stage rules, job lifecycle, per-role 403s, recruiter/account-manager IDOR 404s, the illegal jump APPLIED → HIRED returning 409, stale versions, masking for client users, shortlist-only visibility for hiring managers
+  - web 30 (+3)
+  - E2E 20 (+2: request → job → candidate → Screening, plus the API refusing APPLIED → HIRED)
+
+**Decisions / deviations (and why):**
+
+- **Hiring managers and client users see only SHORTLISTED+ applications and pipeline columns** (security.md §4). Client users get masked email and no phone or nationality.
+- **Duplicate-candidate errors include the existing id only when the caller can open that record**, so the check can't be used to probe other recruiters' candidates.
+- **The candidate audit snapshot stores name, title and skills, not contact details**, to avoid making the audit log a second PII store.
+- **HIRED is enforced now (requires an ACCEPTED offer)**, even though offers and the hire transaction (employee + onboarding) arrive in part 2.
+
+**What AI got wrong and fixed during the task:**
+
+- The experience field would have shown months as years after a form reset (now a controlled years↔months field).
+- Test fixtures used non-hex "UUIDs"; the app's response validation correctly rejected them.
+- After creating a candidate from the pipeline, the search dialog reopened over the board (now the whole flow closes).
+- E2E assumed demo rows on page 1 of shared test-database lists (now searches).
+
+**Known gaps:**
+
+- Interviews, offers and the hire transaction are part 2.
+- CV upload and parsing come with documents and AI.
+- The careers portal (public apply) comes later.
+- Stage-change events for automations and webhooks are emitted once those modules exist.
+
+**Review notes (owner):** _to be written by @pathum_

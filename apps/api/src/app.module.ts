@@ -14,10 +14,13 @@ import { AppValidationPipe } from './common/validation/validation.pipe';
 import { JobsModule } from './infra/jobs/jobs.module';
 import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { ApplicationsModule } from './modules/applications/applications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CandidatesModule } from './modules/candidates/candidates.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { HealthModule } from './modules/health/health.module';
+import { JobsModule as RecruitmentJobsModule } from './modules/jobs/jobs.module';
 import { ManpowerRequestsModule } from './modules/manpower-requests/manpower-requests.module';
 import { SettingsModule } from './modules/settings/settings.service';
 import { UsersModule } from './modules/users/users.module';
@@ -57,6 +60,9 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ClientsModule,
     ManpowerRequestsModule,
+    RecruitmentJobsModule,
+    CandidatesModule,
+    ApplicationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

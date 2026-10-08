@@ -1,7 +1,9 @@
 import type { Permission } from '@staffos/shared';
 import {
+  Briefcase,
   Building2,
   ClipboardList,
+  Contact,
   LayoutDashboard,
   type LucideIcon,
   ScrollText,
@@ -25,6 +27,13 @@ export const NAV: NavSection[] = [
         icon: ClipboardList,
         permission: 'manpower-requests:read',
       },
+    ],
+  },
+  {
+    label: 'Recruitment',
+    items: [
+      { to: '/jobs', label: 'Jobs', icon: Briefcase, permission: 'jobs:read' },
+      { to: '/candidates', label: 'Candidates', icon: Contact, permission: 'candidates:read' },
     ],
   },
   {

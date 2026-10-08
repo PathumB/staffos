@@ -8,6 +8,8 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Recruitment (ATS): open jobs from approved requests (recruiters, hiring manager, skills), publish/hold/close; candidates with skills and duplicate detection; applications on a Kanban pipeline (drag-and-drop or "Move to" menu) where candidates move one stage at a time, with reasons for rejections and a full stage history. Hiring managers and clients only see shortlisted candidates; clients never see contact details.
+- Demo recruitment data: three open jobs with candidates at every stage.
 - CRM: clients (TRN, VAT, payment terms), contacts with client-portal invitations, activity timeline and projects. Account managers see only their own clients; client users only their own company.
 - Manpower requests: draft → submit → automatic approval up to 20 people, HR Manager approval above that (threshold configurable), reject with reason, cancel. Client users raise requests that their account manager reviews.
 - Demo CRM data: four fictional client companies with contacts, a project and requests in each state.

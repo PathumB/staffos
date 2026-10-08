@@ -21,6 +21,8 @@ test('admin signs in, manages users, and the session survives a reload', async (
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Users' }).click();
 
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
+  // The test database holds many users; search rather than assume page 1.
+  await page.getByLabel('Search users').fill('recruiter@staffos.demo');
   await expect(page.getByText('recruiter@staffos.demo')).toBeVisible();
 
   // Access token is in memory only; the refresh cookie restores the session.

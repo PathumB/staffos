@@ -204,9 +204,9 @@ type ManpowerRequestInput = {
 | POST | `/jobs` | `jobs:write`. `{ manpowerRequestId, title?, description?, recruiterIds[], hiringManagerId, skills[] }` |
 | GET | `/jobs/:id` (S) | `jobs:read` |
 | PATCH | `/jobs/:id` | `jobs:write` |
-| POST | `/jobs/:id/publish` | `jobs:publish`. `DRAFT/ON_HOLD → OPEN` |
+| POST | `/jobs/:id/publish` | `jobs:publish`. `{ version }`. `DRAFT/ON_HOLD → OPEN` |
 | POST | `/jobs/:id/hold` · `/close` | `jobs:publish` |
-| GET | `/jobs/:id/pipeline` (S) | `applications:read`. Applications grouped by stage with counts |
+| GET | `/jobs/:id/pipeline` (S) | `applications:read`. `{ job, columns: [{ stage, count, applications: [{ id, version, stage, candidate, daysInStage }] }] }`. Hiring managers and client users get only the shortlisted columns |
 
 ```ts
 type JobSkill = { name: string; weight: 'MUST' | 'NICE'; minYears?: number };

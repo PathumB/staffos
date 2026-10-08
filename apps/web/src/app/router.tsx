@@ -15,6 +15,10 @@ import { ClientDetailPage } from '@/features/clients/pages/ClientDetailPage';
 import { ClientsPage } from '@/features/clients/pages/ClientsPage';
 import { RequestDetailPage } from '@/features/manpower-requests/pages/RequestDetailPage';
 import { RequestsPage } from '@/features/manpower-requests/pages/RequestsPage';
+import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetailPage';
+import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
+import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
+import { JobsPage } from '@/features/recruitment/pages/JobsPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './layout/AppLayout';
@@ -39,6 +43,38 @@ export const routes = [
         element: <AppLayout />,
         children: [
           { path: '/', element: <DashboardPage /> },
+          {
+            path: '/jobs',
+            element: (
+              <RequirePermission permissions={['jobs:read']}>
+                <JobsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/jobs/:id',
+            element: (
+              <RequirePermission permissions={['jobs:read']}>
+                <JobDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/candidates',
+            element: (
+              <RequirePermission permissions={['candidates:read']}>
+                <CandidatesPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/candidates/:id',
+            element: (
+              <RequirePermission permissions={['candidates:read']}>
+                <CandidateDetailPage />
+              </RequirePermission>
+            ),
+          },
           {
             path: '/clients',
             element: (
