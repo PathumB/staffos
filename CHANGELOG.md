@@ -8,6 +8,7 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Invoices: Finance generates a draft invoice per client and period from approved timesheets (one line per worker, hours × rate, VAT at the client's rate, all in whole fils), then issues it with a yearly number (INV-2026-000123) and a downloadable PDF tax invoice. Issued invoices cannot be changed; they can be voided with a reason (their hours become invoiceable again) or marked paid. Repeated generate requests are safe (Idempotency-Key).
 - Deployments: account managers (or HR) deploy employees to client projects with dates and an hourly bill rate. Overlapping deployments are refused; deploying before onboarding is finished needs an HR Manager and a reason. Statuses move from planned to active to ended automatically.
 - Timesheets: employees (or HR on their behalf) enter daily hours for a week and submit them; the client and Finance are notified. The client approves or returns them with a comment; returned timesheets can be corrected and resubmitted. Bulk approve for approvers.
 - Careers site (public): browse open roles by keyword, emirate and category (client names only when allowed), apply with a CV and consent (bot check with Cloudflare Turnstile, 5 applications per hour per network), get a confirmation email with a private tracking link showing a simple status, and request a copy or deletion of your data. New applicants appear in the job's pipeline and the recruiter is notified.

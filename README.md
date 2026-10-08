@@ -9,7 +9,7 @@ Client request (CRM) → approval → job published → AI screening → intervi
   → onboarding (HR) → deployment → timesheets → invoice (ERP-lite)
 ```
 
-> Status: **foundation, access control and CRM**. Sign-in, roles and permissions, user administration, the audit log, clients and manpower requests with HR approval, recruitment (jobs, candidates, Kanban pipeline, interviews, offers and hiring), employees, onboarding checklists, documents with expiry alerts, notifications, the public careers site (/careers), deployments and timesheets are live. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
+> Status: **foundation, access control and CRM**. Sign-in, roles and permissions, user administration, the audit log, clients and manpower requests with HR approval, recruitment (jobs, candidates, Kanban pipeline, interviews, offers and hiring), employees, onboarding checklists, documents with expiry alerts, notifications, the public careers site (/careers), deployments, timesheets and invoices are live: the full flow from client request to invoice works end to end. Business modules land one at a time; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Tech stack
 

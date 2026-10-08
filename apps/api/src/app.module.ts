@@ -11,6 +11,7 @@ import { RequestContextMiddleware } from './common/context/request-context';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { loggerParams } from './common/logging/logger.config';
 import { AppValidationPipe } from './common/validation/validation.pipe';
+import { DomainEventsModule } from './infra/events/domain-events.service';
 import { JobsModule } from './infra/jobs/jobs.module';
 import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
@@ -26,6 +27,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 import { JobsModule as RecruitmentJobsModule } from './modules/jobs/jobs.module';
 import { ManpowerRequestsModule } from './modules/manpower-requests/manpower-requests.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -63,6 +65,7 @@ import { UsersModule } from './modules/users/users.module';
     JobsModule,
     MailModule,
     StorageModule,
+    DomainEventsModule,
     AuthCoreModule,
     AuditModule,
     NotificationsModule,
@@ -83,6 +86,7 @@ import { UsersModule } from './modules/users/users.module';
     CareersModule,
     DeploymentsModule,
     TimesheetsModule,
+    InvoicesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

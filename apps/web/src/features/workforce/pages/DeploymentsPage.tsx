@@ -29,7 +29,8 @@ import {
 import { Input, NativeSelect, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { useClients, useProjects } from '@/features/clients/api';
+import { useProjects } from '@/features/clients/api';
+import { ClientPicker } from '@/features/clients/components/ClientPicker';
 import { useEmployees } from '@/features/employees/api';
 import { ApiClientError } from '@/lib/api-client';
 import { useListParams } from '@/lib/list-params';
@@ -193,7 +194,6 @@ function NewDeploymentDialog({ onClose }: { onClose: () => void }) {
   const isHr = user?.roles.some((r) => r === 'SUPER_ADMIN' || r === 'HR_MANAGER') ?? false;
   const create = useCreateDeployment();
   const [clientId, setClientId] = useState('');
-  const clients = useClients({ pageSize: 100, sort: 'name' });
   const projects = useProjects(clientId, Boolean(clientId));
   const employees = useEmployees({ pageSize: 100, sort: 'lastName' });
   const [serverError, setServerError] = useState<string | null>(null);
@@ -263,21 +263,7 @@ function NewDeploymentDialog({ onClose }: { onClose: () => void }) {
               </NativeSelect>
             )}
           </FormField>
-          <div className="grid gap-1.5">
-            <Label htmlFor="deploy-client">Client</Label>
-            <NativeSelect
-              id="deploy-client"
-              value={clientId}
-              onChange={(ev) => setClientId(ev.target.value)}
-            >
-              <option value="">Select</option>
-              {clients.data?.data.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
+          <ClientPicker value={clientId} onChange={setClientId} />
           <FormField label="Project" error={e.projectId?.message}>
             {(p) => (
               <NativeSelect {...p} {...register('projectId')} disabled={!clientId}>

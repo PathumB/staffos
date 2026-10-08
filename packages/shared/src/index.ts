@@ -8,6 +8,7 @@ export * from './errors.js';
 export * from './health.js';
 export * from './hiring.js';
 export * from './hr.js';
+export * from './invoices.js';
 export * from './pagination.js';
 export * from './permissions.js';
 export * from './recruitment.js';

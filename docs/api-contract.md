@@ -370,6 +370,9 @@ type Invoice = {
   lines: { deploymentId: string; employeeName: string; description: string; minutes: number; rateFils: number; amountFils: number }[];
 };
 // amountFils = round(minutes * rateFils / 60); vatFils = round(subtotalFils * vatRateBps / 10000) — half-up, computed server-side
+// A timesheet belongs to the period its week starts in. Errors: 422 NOTHING_TO_INVOICE; 409 IDEMPOTENCY_KEY_REUSED,
+// CONCURRENT_CHANGE, INVALID_INVOICE_TRANSITION, STALE_VERSION, INVOICE_NOT_ISSUED (pdf); 400 INVALID_PAYMENT_DATE.
+// Client users see only ISSUED/PAID invoices of their own client; issue emits INVOICE_ISSUED (domain event).
 ```
 
 ### 2.18 Workflows and automations

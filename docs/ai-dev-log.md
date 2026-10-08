@@ -490,3 +490,48 @@ Review notes (owner): what AI got wrong, what I changed
 - Timesheets are entered per week; there are no public-holiday rules.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Invoices (ERP-lite)
+
+**Tool:** Claude Code (Opus 5.5)
+
+**AI produced:**
+
+- **Shared:** the invoice schemas plus the money maths (`lineAmountFils`, `vatFils`), integer and half-up, with unit tests.
+- **Invoices API:**
+  - **generate:** APPROVED, uninvoiced weeks starting in the period; one line per deployment; client VAT. Timesheets become INVOICED in the same transaction, with a conditional update against concurrent runs. `Idempotency-Key` replays the stored response, and a key reused for a different request returns 409.
+  - **issue:** a gap-free per-year number via an `INSERT … ON CONFLICT … RETURNING` on `invoice_number_sequences`; due date from the client's payment terms; PDF queued; `INVOICE_ISSUED` domain event.
+  - **void:** with a reason, releasing the timesheets.
+  - **mark-paid:** not before the issue date.
+  - **pdf:** a 5-minute signed link; the PDF is built on demand if the job hasn't run.
+- **`DomainEventsService`:** in-process events, emitted after commit. A failing subscriber never affects the emitter; automations and webhooks will subscribe.
+- **PDF:** a UAE tax invoice via pdfkit (MIT; added as a dependency together with `@types/pdfkit`), using built-in fonts only.
+- **Web:**
+  - Invoices list with a generate dialog (one Idempotency-Key per dialog, so double clicks are safe)
+  - invoice page (lines, totals, issue/void/mark paid/PDF)
+  - a reusable search-first `ClientPicker`, now also used by the deploy dialog
+- **Tests:**
+  - API 310 (+6 invoice): totals, statuses, idempotency, empty period, issue/number/event/PDF, the DB immutability trigger, void releasing hours, paid-date rule
+  - shared +2
+  - E2E journey 4 complete: the client approves the timesheet → Finance generates, checks the total (AED 1,890.00) and issues
+
+**Decisions / deviations (and why):**
+
+- **A timesheet's week belongs to the period it starts in.** This avoids splitting a week across invoices.
+- **Drafts can be voided too.** This lets Finance discard a draft and release its hours.
+- **Client users see only issued or paid invoices.**
+
+**What AI got wrong and fixed during the task:**
+
+- **Client dropdowns loaded "the first 100 clients".** The test database (and real data) outgrows that, so the client is now picked by search.
+- **Test fixture: random TRNs broke the TRN format check.** The fixture no longer sets a TRN.
+
+**Known gaps:**
+
+- **No payment allocation or partial payments;** an invoice is either paid or not.
+- **Credit notes:** void and re-issue instead.
+- **Several transient Neon connection drops today** (P1017/P1001) made single tests fail once. CI uses a local Postgres and is not affected.
+
+**Review notes (owner):** _to be written by @pathum_

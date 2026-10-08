@@ -1,12 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { captureDiagnostics } from './diagnostics';
 
-// Journey 4 (docs/00-master-plan.md §7), first half: an employee's submitted timesheet is
-// approved by the client in their portal. (The invoice half arrives with the invoices module.)
+// Journey 4 (docs/00-master-plan.md §7): an employee's submitted timesheet is approved by the
+// client, then Finance generates and issues the invoice.
 const PASSWORD = 'StaffOS-Demo-2026!';
 captureDiagnostics();
 
-test('the client approves a submitted timesheet', async ({ page, request, baseURL }) => {
+test('the client approves a timesheet and Finance invoices it', async ({
+  page,
+  request,
+  baseURL,
+}) => {
   test.slow();
   // Setup through the API as HR (entering hours on the worker's behalf): a random future week on
   // the seeded demo deployment, so repeated runs never collide.
@@ -51,4 +55,29 @@ test('the client approves a submitted timesheet', async ({ page, request, baseUR
   await page.getByRole('button', { name: 'Approve' }).click();
   await expect(page.getByText('Timesheet approved.')).toBeVisible();
   await expect(page.getByRole('heading', { name: `Week of ${day(0)}` })).toContainText('Approved');
+
+  // Finance invoices that week for the client and issues the invoice.
+  await page.getByRole('button', { name: /Account menu/ }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  await page.getByLabel('Email').fill('finance@staffos.demo');
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('heading', { name: /Welcome/ })).toBeVisible();
+  await page.goto('/invoices');
+  await page.getByRole('button', { name: 'Generate invoice' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Search clients').fill('Gulf Build Contracting');
+  await expect(dialog.getByRole('option', { name: 'Gulf Build Contracting LLC' })).toBeAttached();
+  await dialog
+    .getByLabel('Client', { exact: true })
+    .selectOption({ label: 'Gulf Build Contracting LLC' });
+  await dialog.getByLabel('From').fill(day(0));
+  await dialog.getByLabel('To').fill(day(6));
+  await dialog.getByRole('button', { name: 'Generate' }).click();
+  await expect(page.getByRole('heading', { name: /Draft invoice/ })).toBeVisible();
+  // 40 h at AED 45/h = AED 1,800.00 + 5% VAT = AED 1,890.00
+  await expect(page.getByText('AED 1,890.00')).toBeVisible();
+  await page.getByRole('button', { name: 'Issue' }).click();
+  await expect(page.getByRole('heading', { name: /INV-\d{4}-\d{6}/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'PDF' })).toBeVisible();
 });

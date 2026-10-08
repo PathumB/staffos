@@ -66,3 +66,14 @@ export function timesheetApproveScope(actor: Actor): Prisma.TimesheetWhereInput 
 /** Bill rates are commercial data: hidden from employees. */
 export const canSeeBilling = (actor: Actor) =>
   hasRole(actor, 'SUPER_ADMIN', 'HR_MANAGER', 'FINANCE', 'ACCOUNT_MANAGER', 'CLIENT_USER');
+
+/** Invoices: Finance all; account managers their clients'; clients only issued/paid ones. */
+export function invoiceReadScope(actor: Actor): Prisma.InvoiceWhereInput {
+  if (hasRole(actor, 'SUPER_ADMIN', 'FINANCE')) return {};
+  const or: Prisma.InvoiceWhereInput[] = [];
+  if (hasRole(actor, 'ACCOUNT_MANAGER')) or.push({ client: { accountManagerId: actor.id } });
+  if (hasRole(actor, 'CLIENT_USER') && actor.clientId) {
+    or.push({ clientId: actor.clientId, status: { in: ['ISSUED', 'PAID'] } });
+  }
+  return or.length ? { OR: or } : NOTHING;
+}

@@ -29,6 +29,8 @@ import { EmployeesPage } from '@/features/employees/pages/EmployeesPage';
 import { OrgPage } from '@/features/employees/pages/OrgPage';
 import { ApplicationDetailPage } from '@/features/hiring/pages/ApplicationDetailPage';
 import { InterviewsPage } from '@/features/hiring/pages/InterviewsPage';
+import { InvoicePage } from '@/features/invoices/pages/InvoicePage';
+import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage';
 import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage';
 import { PlanDetailPage } from '@/features/onboarding/pages/PlanDetailPage';
 import { TemplatesPage } from '@/features/onboarding/pages/TemplatesPage';
@@ -177,6 +179,22 @@ export const routes = [
             element: (
               <RequirePermission permissions={['timesheets:read']}>
                 <TimesheetPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/invoices',
+            element: (
+              <RequirePermission permissions={['invoices:read']}>
+                <InvoicesPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/invoices/:id',
+            element: (
+              <RequirePermission permissions={['invoices:read']}>
+                <InvoicePage />
               </RequirePermission>
             ),
           },

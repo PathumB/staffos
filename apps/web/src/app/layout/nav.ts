@@ -13,6 +13,7 @@ import {
   ListChecks,
   type LucideIcon,
   Network,
+  Receipt,
   ScrollText,
   ShieldCheck,
   Users,
@@ -85,6 +86,7 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/deployments', label: 'Deployments', icon: HardHat, permission: 'deployments:read' },
       { to: '/timesheets', label: 'Timesheets', icon: Clock, permission: 'timesheets:read' },
+      { to: '/invoices', label: 'Invoices', icon: Receipt, permission: 'invoices:read' },
     ],
   },
   {
