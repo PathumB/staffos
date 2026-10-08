@@ -18,4 +18,8 @@ module.exports = {
   },
   collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/main.ts'],
   coverageDirectory: './coverage',
+  // On GitHub Actions, failing tests also appear as annotations on the run page.
+  reporters: process.env.GITHUB_ACTIONS
+    ? ['default', ['github-actions', { silent: false }], 'summary']
+    : ['default'],
 };
