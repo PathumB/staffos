@@ -29,11 +29,15 @@ export function RedirectIfAuthenticated() {
  */
 export function RequirePermission({
   permissions,
+  any = false,
   children,
 }: {
   permissions: Permission[];
+  /** Allow when the user has any one of `permissions` (default: all of them). */
+  any?: boolean;
   children: React.ReactNode;
 }) {
   const { can } = useAuth();
-  return can(...permissions) ? children : <PermissionDenied />;
+  const allowed = any ? permissions.some((p) => can(p)) : can(...permissions);
+  return allowed ? children : <PermissionDenied />;
 }

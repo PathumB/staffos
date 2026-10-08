@@ -20,8 +20,11 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { HealthModule } from './modules/health/health.module';
+import { InterviewsModule } from './modules/interviews/interviews.module';
 import { JobsModule as RecruitmentJobsModule } from './modules/jobs/jobs.module';
 import { ManpowerRequestsModule } from './modules/manpower-requests/manpower-requests.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OffersModule } from './modules/offers/offers.module';
 import { SettingsModule } from './modules/settings/settings.service';
 import { UsersModule } from './modules/users/users.module';
 
@@ -54,6 +57,7 @@ import { UsersModule } from './modules/users/users.module';
     MailModule,
     AuthCoreModule,
     AuditModule,
+    NotificationsModule,
     SettingsModule,
     HealthModule,
     AuthModule,
@@ -63,6 +67,8 @@ import { UsersModule } from './modules/users/users.module';
     RecruitmentJobsModule,
     CandidatesModule,
     ApplicationsModule,
+    InterviewsModule,
+    OffersModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

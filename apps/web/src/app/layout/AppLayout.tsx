@@ -15,14 +15,14 @@ import {
 import { useAuth } from '@/features/auth/AuthProvider';
 import { cn } from '@/lib/utils';
 import { useTheme } from '../theme';
-import { NAV } from './nav';
+import { canSeeNavItem, NAV } from './nav';
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = useAuth();
   return (
     <nav aria-label="Main" className="flex flex-col gap-6 p-3">
       {NAV.map((section, i) => {
-        const items = section.items.filter((item) => !item.permission || can(item.permission));
+        const items = section.items.filter((item) => canSeeNavItem(item, (p) => can(p)));
         if (items.length === 0) return null;
         return (
           <div key={section.label ?? i}>

@@ -20,6 +20,7 @@ import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { assertStageTransition } from './application.rules';
+import { HireService } from './hire.service';
 
 const include = {
   candidate: { select: { id: true, firstName: true, lastName: true, currentTitle: true } },
@@ -66,6 +67,7 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly hiring: HireService,
   ) {}
 
   async list(query: ApplicationListQuery, actor: Actor): Promise<Paginated<Application>> {
@@ -164,7 +166,8 @@ export class ApplicationsService {
 
   /**
    * The only way to change a stage (US-APP-02). Rules: one step forward or an exit, optimistic
-   * locking on `version`, and an append-only history row in the same transaction.
+   * locking on `version`, and an append-only history row in the same transaction. HIRED also
+   * creates the employee and onboarding plan (US-OFFER-02).
    */
   async transition(id: string, input: TransitionInput, actor: Actor): Promise<Application> {
     const current = await this.prisma.application.findFirst({
@@ -220,6 +223,8 @@ export class ApplicationsService {
           changedAt: now,
         },
       });
+      // Same transaction: employee + onboarding plan exist only if the stage change commits.
+      if (input.to === 'HIRED') await this.hiring.hire(tx, id, actor);
       await this.audit.record(
         {
           action: 'TRANSITION',

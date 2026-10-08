@@ -19,6 +19,8 @@ import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetai
 import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
 import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
 import { JobsPage } from '@/features/recruitment/pages/JobsPage';
+import { ApplicationDetailPage } from '@/features/hiring/pages/ApplicationDetailPage';
+import { InterviewsPage } from '@/features/hiring/pages/InterviewsPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './layout/AppLayout';
@@ -56,6 +58,22 @@ export const routes = [
             element: (
               <RequirePermission permissions={['jobs:read']}>
                 <JobDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/applications/:id',
+            element: (
+              <RequirePermission permissions={['applications:read']}>
+                <ApplicationDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/interviews',
+            element: (
+              <RequirePermission permissions={['interviews:write', 'interview-feedback:write']} any>
+                <InterviewsPage />
               </RequirePermission>
             ),
           },

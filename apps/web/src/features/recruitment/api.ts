@@ -61,10 +61,11 @@ export function useJobs(query: Partial<JobListQuery>, enabled = true) {
   });
 }
 
-export function useJob(id: string) {
+export function useJob(id: string, enabled = true) {
   return useQuery({
     queryKey: recruitmentKeys.job(id),
     queryFn: () => apiFetch(`/jobs/${id}`, jobSchema),
+    enabled,
   });
 }
 

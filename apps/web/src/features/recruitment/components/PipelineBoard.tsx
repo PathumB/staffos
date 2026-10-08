@@ -77,7 +77,7 @@ function CandidateCard({
         )}
         <div className="min-w-0 flex-1">
           <Link
-            to={`/candidates/${card.candidate.id}`}
+            to={`/applications/${card.id}`}
             className="block truncate font-medium text-primary underline-offset-4 hover:underline"
           >
             {card.candidate.name}

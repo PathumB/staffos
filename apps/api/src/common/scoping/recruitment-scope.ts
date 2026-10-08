@@ -73,3 +73,44 @@ export function candidateWriteScope(actor: Actor): Prisma.CandidateWhereInput {
 export function masksCandidateContact(actor: Actor): boolean {
   return hasRole(actor, 'CLIENT_USER') && !isRecruitmentAdmin(actor);
 }
+
+// ── Interviews and offers ──
+
+/**
+ * Interviews: admins; recruiters on the job; the job's hiring manager; and anyone on the panel
+ * (they need it to give feedback). Client users don't see interviews or feedback.
+ */
+export function interviewReadScope(actor: Actor): Prisma.InterviewWhereInput {
+  if (isRecruitmentAdmin(actor)) return {};
+  const or: Prisma.InterviewWhereInput[] = [{ interviewers: { some: { userId: actor.id } } }];
+  if (hasRole(actor, 'RECRUITER')) or.push({ application: { job: assignedTo(actor) } });
+  if (hasRole(actor, 'HIRING_MANAGER'))
+    or.push({ application: { job: { hiringManagerId: actor.id } } });
+  return { OR: or };
+}
+
+/** Scheduling, rescheduling and cancelling: admins and the job's recruiters. */
+export function interviewWriteScope(actor: Actor): Prisma.InterviewWhereInput {
+  if (isRecruitmentAdmin(actor)) return {};
+  return hasRole(actor, 'RECRUITER') ? { application: { job: assignedTo(actor) } } : NOTHING;
+}
+
+export function offerReadScope(actor: Actor): Prisma.OfferWhereInput {
+  if (isRecruitmentAdmin(actor)) return {};
+  const or: Prisma.OfferWhereInput[] = [];
+  if (hasRole(actor, 'RECRUITER')) or.push({ application: { job: assignedTo(actor) } });
+  if (hasRole(actor, 'HIRING_MANAGER'))
+    or.push({ application: { job: { hiringManagerId: actor.id } } });
+  return or.length ? { OR: or } : NOTHING;
+}
+
+/** Create, send, record the answer, withdraw: admins and the job's recruiters. */
+export function offerWriteScope(actor: Actor): Prisma.OfferWhereInput {
+  if (isRecruitmentAdmin(actor)) return {};
+  return hasRole(actor, 'RECRUITER') ? { application: { job: assignedTo(actor) } } : NOTHING;
+}
+
+/** US-OFFER-01: the job's hiring manager or an HR Manager approves. */
+export function canApproveOffer(actor: Actor, hiringManagerId: string): boolean {
+  return isRecruitmentAdmin(actor) || actor.id === hiringManagerId;
+}

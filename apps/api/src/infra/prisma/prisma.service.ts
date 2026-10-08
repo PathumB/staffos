@@ -15,7 +15,12 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
     if (!connectionString) {
       new Logger(PrismaService.name).warn('DATABASE_URL is not set; database calls will fail.');
     }
-    super({ adapter: new PrismaPg({ connectionString }) });
+    super({
+      adapter: new PrismaPg({ connectionString }),
+      // Prisma's 5 s default is too tight for multi-step business transactions (hire: employee +
+      // plan + tasks + audit) on a serverless database that may be waking from a cold start.
+      transactionOptions: { maxWait: 10_000, timeout: 20_000 },
+    });
   }
 
   async onModuleDestroy(): Promise<void> {

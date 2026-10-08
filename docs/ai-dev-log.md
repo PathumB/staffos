@@ -223,3 +223,79 @@ Review notes (owner): what AI got wrong, what I changed
 - Stage-change events for automations and webhooks are emitted once those modules exist.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Recruitment (ATS) part 2: interviews, offers, hire
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Continue with the next part, using the recommended defaults.
+
+**AI produced:**
+
+- **Shared** (`hiring.ts`):
+  - interview, feedback and offer schemas
+  - the offer lifecycle as a pure function (`nextOfferStatus`), used by both the API and the UI to decide which buttons to show
+  - a default interview rubric
+- **API:**
+  - `interviews`:
+    - schedule only in the Interview stage
+    - panel limited to active users who can give feedback
+    - reschedule and cancel
+    - scorecards: panel members only, editable for 24 h; the whole panel scoring completes the interview and notifies the recruiters
+    - `GET /interviews/panel-options`
+  - `offers`:
+    - create in the Offer stage, one open offer per application
+    - approve/reject by the job's hiring manager or HR
+    - send / accept / decline / withdraw, with optimistic locking and an audit entry per action
+  - **Hire** (`HireService`), inside the HIRED transition's transaction:
+    - employee from a Postgres sequence
+    - onboarding plan copied from the category template (else the default)
+    - job marked FILLED at headcount
+    - account manager notified
+  - Minimal `NotificationsService` (writes rows only).
+  - `.ics` builder (RFC 5545, Asia/Dubai, folding and escaping), with no new dependency.
+  - Migration:
+    - `employee_number_seq`
+    - an exclusion constraint allowing one open or accepted offer per application
+  - Prisma interactive-transaction timeout raised to 20 s (multi-step business transactions on a serverless database).
+- **Web:**
+  - application page: stage history, interviews with scorecards, offers with lifecycle actions, Hire
+  - schedule/reschedule dialog in Dubai time
+  - feedback dialog, offer dialog
+  - Interviews list page
+  - pipeline cards and candidate applications link to the application page
+  - nav items can require "any of" several permissions
+- **Seed:**
+  - UAE onboarding templates (always seeded, never overwritten)
+  - demo interviews and pending offers
+- **Tests:**
+  - API 257 (+23), including the hire rollback (stage stays OFFER, nothing created) and per-role 403/404s
+  - web 33 (+3)
+  - shared 31 (+8)
+  - E2E journey 3 (offer approved → sent → accepted → Hired)
+
+**Decisions / deviations (and why):**
+
+- **Each person gets their own invite and email**, so the candidate's calendar file never contains staff addresses.
+- **Other panel members see only their own scorecard**; the job's recruiters and hiring manager see all.
+- **Hiring managers of other jobs get 404, not 403, on an offer.**
+  - The story says "others get 403". Here, a role without `offers:approve` gets 403, and a hiring manager who can't see the offer gets 404, so offer IDs can't be probed (security.md §4).
+- **Interviews can't be booked in the past** (5-minute grace). Feedback timing isn't restricted.
+- **Onboarding tasks keep their `assigneeRole` and have no assignee yet.** Assignment, and the employee's own tasks, come with the onboarding module.
+- **Deferred to the AI module:** the AI interview kit (US-INT-02) and the AI summary of feedback.
+
+**What AI got wrong and fixed during the task:**
+
+- The hire transaction hit Prisma's 5 s default against remote Neon (P2028); fixed by raising the transaction timeout.
+- React Compiler lint rejected `watch()` and resetting state inside effects; switched to `useWatch`, and the feedback dialog now mounts only while it is open.
+- After someone was removed from a panel, their old feedback could have counted towards "panel complete"; the count is now limited to the current panel.
+
+**Known gaps:**
+
+- No notifications inbox or bell yet; rows are written for the notifications module.
+- No employee or onboarding screens yet; those are the HR and onboarding modules.
+- Locally the hire E2E journey takes about 1.7 min because of the UAE→Ohio round trips; it is marked `test.slow()`.
+
+**Review notes (owner):** _to be written by @pathum_

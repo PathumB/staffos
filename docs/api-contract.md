@@ -250,21 +250,26 @@ type TransitionInput = {
 
 | Method | Path | perm |
 | --- | --- | --- |
-| GET | `/interviews` (S) | `applications:read`. Filters: `applicationId`, `interviewerId`, `scheduledAt` |
-| POST | `/interviews` (S) | `interviews:write`. `{ applicationId, scheduledAt, durationMin, mode: ONSITE|VIDEO|PHONE, location?, interviewerIds[] }` |
-| PATCH | `/interviews/:id` (S) | `interviews:write` (reschedule; re-sends .ics) |
-| POST | `/interviews/:id/cancel` (S) | `interviews:write` |
-| POST | `/interviews/:id/feedback` (S) | `interview-feedback:write`. `{ scores: [{ criterion, score: 1-5 }], recommendation: STRONG_YES|YES|NO|STRONG_NO, notes }` |
-| GET | `/interviews/:id/feedback` (S) | `applications:read` |
+| GET | `/interviews` (S) | `applications:read`. Filters: `applicationId`, `interviewerId`, `status`; sort `scheduledAt`. Visible to admins, the job's recruiters and hiring manager, and panel members; never to client users |
+| GET | `/interviews/panel-options` | `interviews:write`. Active users who can interview: `[{ id, name, role }]` (recruiters can't list users) |
+| GET | `/interviews/:id` (S) | `applications:read` |
+| POST | `/interviews` (S) | `interviews:write`. `{ applicationId, scheduledAt (ISO with offset), durationMin 15–480, mode: ONSITE|VIDEO|PHONE, location? (required ONSITE), meetingUrl?, interviewerIds[1–10] }`. 422 `APPLICATION_NOT_IN_INTERVIEW`, `INVALID_INTERVIEWER`, `INTERVIEW_IN_PAST`. Emails each person their own `.ics` (Asia/Dubai) |
+| PATCH | `/interviews/:id` (S) | `interviews:write`. Full schedule (same fields minus `applicationId`); re-sends .ics, removed interviewers get a CANCEL. 409 `INTERVIEW_NOT_SCHEDULED` |
+| POST | `/interviews/:id/cancel` (S) | `interviews:write`. `{ reason }`; sends calendar CANCEL |
+| POST | `/interviews/:id/feedback` (S) | `interview-feedback:write`. `{ scores: [{ criterion, score: 1-5 }], recommendation: STRONG_YES|YES|NO|STRONG_NO, notes }`. Panel members only (403 `NOT_AN_INTERVIEWER`); the author may resubmit within 24 h (409 `FEEDBACK_LOCKED`). When the whole panel has scored: interview `COMPLETED`, recruiters notified |
+| GET | `/interviews/:id/feedback` (S) | `applications:read`. Admins, the job's recruiters and hiring manager see all scorecards; other panel members only their own |
 
 ### 2.10 Offers
 
 | Method | Path | perm |
 | --- | --- | --- |
 | POST | `/offers` (S) | `offers:write`. `{ applicationId, salaryFils, currency, startDate, contractType: PERMANENT|FIXED_TERM|PROJECT, contractMonths?, notes? }` |
+| GET | `/offers` (S) | `offers:read`. Filters: `applicationId`, `status` |
 | GET | `/offers/:id` (S) | `offers:read` |
-| POST | `/offers/:id/approve` · `/reject` (S) | `offers:approve` |
-| POST | `/offers/:id/send` · `/accept` · `/decline` · `/withdraw` (S) | `offers:write` |
+| POST | `/offers/:id/approve` · `/reject` (S) | `offers:approve`. `{ version, reason? }`. Only the job's hiring manager or HR (403 `NOT_OFFER_APPROVER`) |
+| POST | `/offers/:id/send` · `/accept` · `/decline` · `/withdraw` (S) | `offers:write`. `{ version, reason? }`. 409 `INVALID_OFFER_TRANSITION` / `STALE_VERSION` |
+
+Create: application must be in `OFFER` (422 `APPLICATION_NOT_IN_OFFER`), start date not in the past (422 `START_DATE_IN_PAST`), one open or accepted offer per application (409 `OFFER_EXISTS`, also a database exclusion constraint). Moving the application to `HIRED` needs an `ACCEPTED` offer and, in the same transaction, creates the employee (`EMP-001001…`), the onboarding plan from the job category's template (or the default one), marks the job `FILLED` when hires reach the headcount, and notifies the account manager. 409 `ALREADY_EMPLOYED` rolls everything back.
 
 Offer status: `PENDING_APPROVAL → APPROVED → SENT → ACCEPTED | DECLINED`; `WITHDRAWN` from any non-terminal state; `REJECTED` from `PENDING_APPROVAL`.
 

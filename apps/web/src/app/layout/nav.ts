@@ -2,6 +2,7 @@ import type { Permission } from '@staffos/shared';
 import {
   Briefcase,
   Building2,
+  CalendarClock,
   ClipboardList,
   Contact,
   LayoutDashboard,
@@ -11,7 +12,19 @@ import {
   Users,
 } from 'lucide-react';
 
-export type NavItem = { to: string; label: string; icon: LucideIcon; permission?: Permission };
+/** `permission`: required; an array means any one of them is enough. */
+export type NavItem = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  permission?: Permission | Permission[];
+};
+/** Whether the user may see an item (any one permission of an array is enough). */
+export function canSeeNavItem(item: NavItem, can: (p: Permission) => boolean): boolean {
+  if (!item.permission) return true;
+  return Array.isArray(item.permission) ? item.permission.some(can) : can(item.permission);
+}
+
 export type NavSection = { label?: string; items: NavItem[] };
 
 /** Sidebar entries; each module adds its items here. Items are hidden without the permission. */
@@ -34,6 +47,12 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/jobs', label: 'Jobs', icon: Briefcase, permission: 'jobs:read' },
       { to: '/candidates', label: 'Candidates', icon: Contact, permission: 'candidates:read' },
+      {
+        to: '/interviews',
+        label: 'Interviews',
+        icon: CalendarClock,
+        permission: ['interviews:write', 'interview-feedback:write'],
+      },
     ],
   },
   {

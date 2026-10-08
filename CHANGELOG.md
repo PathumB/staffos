@@ -8,6 +8,10 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Interviews: schedule, reschedule or cancel from the application page; the candidate and each interviewer get an email with a calendar invite in Dubai time. Interviewers submit a scorecard (1–5 per criterion, a recommendation and notes) that they can edit for 24 hours; recruiters are notified when the whole panel has scored. New "Interviews" list.
+- Offers: create an offer (salary, start date, contract), approval by the job's hiring manager or HR, then sent, accepted or declined, or withdrawn.
+- Hire: once the offer is accepted, "Hire" creates the employee record and an onboarding plan from the job category's checklist in one step, marks the job filled when its headcount is reached, and notifies the account manager.
+- Default UAE onboarding checklists (documents, medical, visa, Emirates ID, induction), with versions for drivers, healthcare and construction.
 - Recruitment (ATS): open jobs from approved requests (recruiters, hiring manager, skills), publish/hold/close; candidates with skills and duplicate detection; applications on a Kanban pipeline (drag-and-drop or "Move to" menu) where candidates move one stage at a time, with reasons for rejections and a full stage history. Hiring managers and clients only see shortlisted candidates; clients never see contact details.
 - Demo recruitment data: three open jobs with candidates at every stage.
 - CRM: clients (TRN, VAT, payment terms), contacts with client-portal invitations, activity timeline and projects. Account managers see only their own clients; client users only their own company.

@@ -45,3 +45,58 @@ export function passwordResetEmail(to: string, firstName: string, url: string): 
     html: layout('Reset your password', lines, { label: 'Reset password', url }),
   };
 }
+
+export type InterviewEmail = {
+  to: string;
+  firstName: string;
+  /** Candidates see the role only; interviewers also get the candidate name and an app link. */
+  audience: 'candidate' | 'interviewer';
+  kind: 'scheduled' | 'rescheduled' | 'cancelled';
+  jobTitle: string;
+  candidateName: string;
+  when: string;
+  mode: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  reason?: string;
+  link?: string;
+  ics: string;
+};
+
+export function interviewEmail(e: InterviewEmail): MailMessage {
+  const subject =
+    e.kind === 'cancelled'
+      ? `Cancelled: interview for ${e.jobTitle}`
+      : e.kind === 'rescheduled'
+        ? `Updated: interview for ${e.jobTitle}`
+        : `Interview: ${e.jobTitle}`;
+  const intro =
+    e.audience === 'candidate'
+      ? e.kind === 'cancelled'
+        ? `Your interview for ${e.jobTitle} has been cancelled. Our recruiter will be in touch.`
+        : `Your interview for ${e.jobTitle} is ${e.kind === 'rescheduled' ? 'now ' : ''}booked.`
+      : e.kind === 'cancelled'
+        ? `The interview with ${e.candidateName} for ${e.jobTitle} has been cancelled.`
+        : `You are interviewing ${e.candidateName} for ${e.jobTitle}.`;
+  const lines = [
+    `Hi ${e.firstName},`,
+    intro,
+    `When: ${e.when}`,
+    `Format: ${e.mode}`,
+    ...(e.location ? [`Where: ${e.location}`] : []),
+    ...(e.meetingUrl && e.kind !== 'cancelled' ? [`Link: ${e.meetingUrl}`] : []),
+    ...(e.reason && e.audience === 'interviewer' ? [`Reason: ${e.reason}`] : []),
+    'The calendar invite is attached.',
+  ];
+  const action =
+    e.link && e.audience === 'interviewer' && e.kind !== 'cancelled'
+      ? { label: 'Open in StaffOS', url: e.link }
+      : undefined;
+  return {
+    to: e.to,
+    subject,
+    text: `${lines.join('\n\n')}${action ? `\n\n${action.url}` : ''}`,
+    html: layout(subject, lines, action),
+    icalEvent: { method: e.kind === 'cancelled' ? 'CANCEL' : 'REQUEST', content: e.ics },
+  };
+}

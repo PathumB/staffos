@@ -122,10 +122,12 @@ Scoping is applied **inside the service query** (a Prisma `where` built from the
 | `SUPER_ADMIN`, `HR_MANAGER` | Unscoped |
 | `RECRUITER` | Jobs where they are in `job.recruiters`; applications on those jobs; candidates with an application on those jobs or created by them; documents of those candidates (non-identity only) |
 | `ACCOUNT_MANAGER` | Clients where `client.accountManagerId = me`, and everything under them (requests, jobs read-only, deployments, timesheets, invoices); employees currently or previously deployed to those clients |
-| `HIRING_MANAGER` | Jobs where `job.hiringManagerId = me`; applications at stage ≥ `SHORTLISTED` on those jobs; offers on those applications |
+| `HIRING_MANAGER` | Jobs where `job.hiringManagerId = me`; applications at stage ≥ `SHORTLISTED` on those jobs; offers on those applications (approves only those); interviews on those jobs or where they sit on the panel |
 | `FINANCE` | Unscoped within finance resources (deployments, timesheets, invoices, clients read) |
 | `EMPLOYEE` | `employee.userId = me`: own profile, documents, onboarding tasks, deployments, timesheets |
-| `CLIENT_USER` | `clientId` taken **from the token**, never from the request: own client's requests, shortlisted applications, deployments, timesheets, invoices |
+| `CLIENT_USER` | `clientId` taken **from the token**, never from the request: own client's requests, shortlisted applications, deployments, timesheets, invoices. No interviews, scorecards or offers |
+
+Interview scorecards: a panel member who is not the job's recruiter or hiring manager sees only their own scorecard, so one opinion doesn't anchor the next. Invites are sent per person, so the candidate's calendar file never contains staff email addresses.
 
 Implementation: `common/scoping/` exposes `scopeFor(actor, entity)`, which returns a Prisma `where` fragment. Every module has an integration test that logs in as a user of client A and requests a record of client B (journey 5).
 

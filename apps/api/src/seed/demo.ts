@@ -506,3 +506,56 @@ export async function seedDemoRecruitment(prisma: PrismaClient): Promise<void> {
     }
   }
 }
+
+/**
+ * Interviews for demo candidates in the Interview stage and pending offers for those in Offer,
+ * so the application pages and the hiring manager's queue have content. Idempotent.
+ */
+export async function seedDemoHiring(prisma: PrismaClient): Promise<void> {
+  const recruiter = await prisma.user.findUniqueOrThrow({
+    where: { email: 'recruiter@staffos.demo' },
+  });
+  const hm = await prisma.user.findUniqueOrThrow({ where: { email: 'hm@staffos.demo' } });
+  const demoJobs = { slug: { contains: '-demo' } };
+
+  const interviewing = await prisma.application.findMany({
+    where: { stage: 'INTERVIEW', job: demoJobs, interviews: { none: {} } },
+  });
+  for (const [i, app] of interviewing.entries()) {
+    // 10:00 Dubai time (06:00 UTC), spread over the coming days.
+    const when = new Date();
+    when.setUTCDate(when.getUTCDate() + 2 + i);
+    when.setUTCHours(6, 0, 0, 0);
+    await prisma.interview.create({
+      data: {
+        applicationId: app.id,
+        scheduledAt: when,
+        durationMin: 45,
+        mode: i % 2 ? 'VIDEO' : 'ONSITE',
+        location: i % 2 ? null : 'StaffOS office, Business Bay',
+        meetingUrl: i % 2 ? 'https://meet.example.test/staffos-demo' : null,
+        createdById: recruiter.id,
+        interviewers: { create: [{ userId: hm.id }] },
+      },
+    });
+  }
+
+  const offering = await prisma.application.findMany({
+    where: { stage: 'OFFER', job: demoJobs, offers: { none: {} } },
+  });
+  for (const app of offering) {
+    const start = new Date();
+    start.setUTCDate(start.getUTCDate() + 30);
+    await prisma.offer.create({
+      data: {
+        applicationId: app.id,
+        salaryFils: 550_000,
+        startDate: new Date(start.toISOString().slice(0, 10)),
+        contractType: 'FIXED_TERM',
+        contractMonths: 24,
+        notes: 'Includes shared accommodation and transport.',
+        createdById: recruiter.id,
+      },
+    });
+  }
+}

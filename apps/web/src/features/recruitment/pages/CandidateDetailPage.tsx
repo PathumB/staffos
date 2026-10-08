@@ -193,7 +193,13 @@ export function CandidateDetailPage() {
                           {a.rejectReason && ` · “${a.rejectReason}”`}
                         </p>
                       </div>
-                      <StageBadge stage={a.stage} />
+                      <Link
+                        to={`/applications/${a.id}`}
+                        aria-label={`Open application for ${a.job.title}`}
+                        className="rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      >
+                        <StageBadge stage={a.stage} />
+                      </Link>
                     </li>
                   ))}
                 </ul>

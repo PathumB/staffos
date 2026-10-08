@@ -5,7 +5,14 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import type { Env } from '../../common/config/env';
 import { JobsService } from '../jobs/jobs.service';
 
-export type MailMessage = { to: string; subject: string; text: string; html: string };
+export type MailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  /** Calendar invite (RFC 5545 text); mail clients show accept/decline buttons. */
+  icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
+};
 
 /** Swappable email transport (CLAUDE.md §3): console (dev), Ethereal (dev preview), SMTP (Brevo). */
 export interface MailProvider {
@@ -17,7 +24,7 @@ class ConsoleMailProvider implements MailProvider {
   async send(message: MailMessage & { from: string }): Promise<void> {
     // Dev only: prints the text body so links (invites, resets) can be clicked from the log.
     this.logger.info(
-      { to: message.to, subject: message.subject },
+      { to: message.to, subject: message.subject, calendar: message.icalEvent?.method },
       `Email (console)\n${message.text}`,
     );
   }

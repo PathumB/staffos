@@ -5,14 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { HealthStatusCard } from '@/features/health/components/HealthStatusCard';
-import { NAV } from '../layout/nav';
+import { canSeeNavItem, NAV } from '../layout/nav';
 
 /** Role dashboards arrive with the reports module; for now: who you are and where to go. */
 export function DashboardPage() {
   const { user, can } = useAuth();
   if (!user) return null;
   const shortcuts = NAV.flatMap((s) => s.items).filter(
-    (i) => i.to !== '/' && (!i.permission || can(i.permission)),
+    (i) => i.to !== '/' && canSeeNavItem(i, (p) => can(p)),
   );
 
   return (
