@@ -1,8 +1,10 @@
 import { expect, type Page, test } from '@playwright/test';
+import { captureDiagnostics } from './diagnostics';
 
 // Journey 1 (second half, docs/00-master-plan.md §7): approved request → job → candidate in pipeline,
 // plus the "illegal stage jump is rejected by the API" negative test.
 const PASSWORD = 'StaffOS-Demo-2026!';
+captureDiagnostics();
 
 async function signIn(page: Page, email: string) {
   await page.goto('/login');

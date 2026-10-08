@@ -94,7 +94,16 @@ jobs:
         run: pnpm --filter e2e install-browsers
 
       - name: E2E tests
-        run: pnpm test:e2e
+        run: set -o pipefail; pnpm test:e2e 2>&1 | tee e2e-output.log
+
+      # Public annotations: what the page showed on failure, plus API server errors.
+      - name: Report E2E failure
+        if: failure()
+        run: |
+          if [ -f e2e-output.log ]; then
+            grep -E '\[diag\]|\[WebServer\].*("level":(40|50)|Error)' e2e-output.log | head -n 60 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' | sed 's/^/::error title=E2E diagnostics::/'
+            echo
+          fi
 
       - name: Upload Playwright report
         if: failure()

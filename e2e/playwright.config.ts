@@ -25,8 +25,7 @@ export default defineConfig({
   reporter: isCI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
   // Locally the API talks to a remote Neon database (cold starts ~3.5 s); CI uses a local Postgres.
   expect: { timeout: isCI ? 5_000 : 15_000 },
-  // Journeys sign in as several users (argon2 per sign-in); 30 s was too tight on 2-vCPU runners.
-  timeout: isCI ? 60_000 : 90_000,
+  timeout: isCI ? 30_000 : 90_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -62,6 +61,8 @@ export default defineConfig({
           },
           reuseExistingServer: !isCI,
           timeout: 60_000,
+          // CI: API logs go to the job output so ci.yml can surface server errors.
+          stdout: isCI ? 'pipe' : 'ignore',
         },
         {
           command: `pnpm --filter web preview --port ${WEB_PORT} --strictPort`,

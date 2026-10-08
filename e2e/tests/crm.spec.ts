@@ -1,7 +1,9 @@
 import { expect, type Page, test } from '@playwright/test';
+import { captureDiagnostics } from './diagnostics';
 
 // Journey 1 (first half, docs/00-master-plan.md §7): client request → HR approval.
 const PASSWORD = 'StaffOS-Demo-2026!';
+captureDiagnostics();
 
 async function signIn(page: Page, email: string) {
   await page.goto('/login');
