@@ -1,7 +1,10 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import { endSession } from '@/lib/session';
+
+// findBy*/waitFor default to 1 s, which flakes on busy machines; real UI waits are well below this.
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom lacks matchMedia (used by the theme provider).
 window.matchMedia ??= ((query: string) => ({

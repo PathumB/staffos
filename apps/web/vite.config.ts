@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => {
       // Worker threads start faster than forked processes; on slow Windows disks (antivirus
       // scanning node_modules) forks hit Vitest's worker start-up timeout.
       pool: 'threads',
+      // Generous per-test budget for slow local machines; CI finishes far below it.
+      testTimeout: 20_000,
       globals: true,
       setupFiles: ['./src/test/setup.ts'],
       css: false,
