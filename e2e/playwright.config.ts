@@ -21,10 +21,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
-  reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  // 'list' in CI too, so the log shows per-test durations.
+  reporter: isCI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
   // Locally the API talks to a remote Neon database (cold starts ~3.5 s); CI uses a local Postgres.
   expect: { timeout: isCI ? 5_000 : 15_000 },
-  timeout: isCI ? 30_000 : 90_000,
+  // Journeys sign in as several users (argon2 per sign-in); 30 s was too tight on 2-vCPU runners.
+  timeout: isCI ? 60_000 : 90_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
