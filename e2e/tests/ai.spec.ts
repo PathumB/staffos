@@ -34,9 +34,11 @@ test('a recruiter creates a candidate from a CV and sees match scores', async ({
   test.slow();
   const unique = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
   const email = `amina.${unique}@candidates.example`;
+  // Duplicate detection also matches phone numbers, so each run needs its own.
+  const phone = `+971 52 ${String(Math.floor(Math.random() * 1e7)).padStart(7, '0')}`;
   const cv = pdfWithText([
     `Amina Cv${unique}`,
-    `${email} | +971 52 444 0199`,
+    `${email} | ${phone}`,
     'Forklift Operator with five years of warehouse experience in Jebel Ali and KEZAD.',
     'Skills: forklift licence, warehouse safety, stock counting, SAP basics.',
   ]);
