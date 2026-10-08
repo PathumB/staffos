@@ -443,3 +443,50 @@ Review notes (owner): what AI got wrong, what I changed
 **Known gaps:** CV text extraction and AI parsing of applicant CVs come with the AI module.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Deployments and timesheets
+
+**Tool:** Claude Code (Opus 5.5)
+
+**AI produced:**
+
+- **Shared:** schemas plus week helpers (`mondayOf`, `weekDates`, minutes formatting).
+- **Pure rules:** initial and nightly deployment statuses; the timesheet week/deployment date checks (400s); the timesheet lifecycle.
+- **Deployments API:**
+  - scoped (HR/Finance all; AM own clients; client users own client; employees own, without bill rates)
+  - onboarding gate with an HR override plus reason (audited as `CREATE_WITH_OVERRIDE`)
+  - overlap pre-check plus the DB exclusion constraint mapped to 409
+  - end/cancel with a reason; a nightly status job
+- **Timesheets API:**
+  - drafts, entries replaced on edit, submit (notifies the client's users and Finance), approve/reject (comment; employee notified), bulk approve with per-id results
+  - optimistic locking on every change
+  - clients never see drafts
+- **Web:**
+  - Deployments page (deploy dialog with client→project picker and the HR override field, end dialog)
+  - Timesheets list (approvers default to Submitted, plus "Approve N shown"), new-timesheet dialog
+  - weekly editor (hours in 0.25 steps, notes, days outside the deployment disabled, save/submit, approve/return)
+- **Seed:** a deployed demo worker with two approved weeks and one waiting for `client@staffos.demo`; the onboarding demo employee has a planned deployment, with an HR override.
+- **Tests:**
+  - API 304 (+18): rules, AM scoping, onboarding gate, overlap, end/cancel/sync, the full timesheet lifecycle with a 403 per role, other-client 404, bulk results
+  - shared +4
+  - E2E: the client approves a submitted timesheet (journey 4, first half)
+
+**Decisions / deviations (and why):**
+
+- **Finance can approve timesheets**, as in the permission matrix: for clients that don't use the portal.
+- **HR can enter hours for an employee**, for workers without a login.
+- **Account managers can't log hours.**
+- **A deployment starts ACTIVE when its start date is today or earlier.**
+
+**What AI got wrong and fixed during the task:**
+
+- **The demo seed attached demo jobs to look-alike requests created by the integration tests.** In CI those tests run first, so the careers E2E found no demo job. The lookup is now limited to demo clients.
+
+**Known gaps:**
+
+- Account managers pick from the employees they can see (people hired for or deployed to their clients). A "bench" list of all available workers is a later improvement.
+- Timesheets are entered per week; there are no public-holiday rules.
+
+**Review notes (owner):** _to be written by @pathum_

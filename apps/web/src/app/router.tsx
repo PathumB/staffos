@@ -33,6 +33,9 @@ import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage';
 import { PlanDetailPage } from '@/features/onboarding/pages/PlanDetailPage';
 import { TemplatesPage } from '@/features/onboarding/pages/TemplatesPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
+import { DeploymentsPage } from '@/features/workforce/pages/DeploymentsPage';
+import { TimesheetPage } from '@/features/workforce/pages/TimesheetPage';
+import { TimesheetsPage } from '@/features/workforce/pages/TimesheetsPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './layout/AppLayout';
 import { DashboardPage } from './pages/DashboardPage';
@@ -150,6 +153,30 @@ export const routes = [
             element: (
               <RequirePermission permissions={['documents:read-identity']}>
                 <ExpiringDocumentsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/deployments',
+            element: (
+              <RequirePermission permissions={['deployments:read']}>
+                <DeploymentsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/timesheets',
+            element: (
+              <RequirePermission permissions={['timesheets:read']}>
+                <TimesheetsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/timesheets/:id',
+            element: (
+              <RequirePermission permissions={['timesheets:read']}>
+                <TimesheetPage />
               </RequirePermission>
             ),
           },

@@ -3,9 +3,11 @@ import {
   Briefcase,
   Building2,
   CalendarClock,
+  Clock,
   ClipboardList,
   Contact,
   FileClock,
+  HardHat,
   IdCard,
   LayoutDashboard,
   ListChecks,
@@ -76,6 +78,13 @@ export const NAV: NavSection[] = [
         icon: Network,
         permission: 'onboarding-templates:manage',
       },
+    ],
+  },
+  {
+    label: 'Workforce',
+    items: [
+      { to: '/deployments', label: 'Deployments', icon: HardHat, permission: 'deployments:read' },
+      { to: '/timesheets', label: 'Timesheets', icon: Clock, permission: 'timesheets:read' },
     ],
   },
   {

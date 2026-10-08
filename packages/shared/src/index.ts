@@ -11,3 +11,4 @@ export * from './hr.js';
 export * from './pagination.js';
 export * from './permissions.js';
 export * from './recruitment.js';
+export * from './workforce.js';

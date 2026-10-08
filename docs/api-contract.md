@@ -333,7 +333,7 @@ Document type: `CV | PASSPORT | VISA | EMIRATES_ID | LABOUR_CARD | MEDICAL | CER
 | PATCH | `/deployments/:id` (S) | `deployments:write` |
 | POST | `/deployments/:id/end` (S) | `deployments:write`. `{ endDate, reason }` |
 
-Status: `PLANNED | ACTIVE | ENDED | CANCELLED`.
+Status: `PLANNED | ACTIVE | ENDED | CANCELLED` (a nightly job at 00:05 Dubai moves PLANNED → ACTIVE → ENDED). Create: 404 `PROJECT_NOT_FOUND` outside the caller's clients, 409 `DEPLOYMENT_OVERLAP` (also a DB exclusion constraint), 422 `ONBOARDING_INCOMPLETE` unless an HR Manager sends `overrideReason`. `end` with a date before a planned start cancels it. `billRateFils` is null for employees.
 
 ### 2.16 Timesheets
 
@@ -347,7 +347,7 @@ Status: `PLANNED | ACTIVE | ENDED | CANCELLED`.
 | POST | `/timesheets/:id/reject` (S) | `timesheets:approve`. `{ comment, version }` |
 | POST | `/timesheets/bulk-approve` (S) | `timesheets:approve`. `{ ids[] }`; returns per-id results |
 
-Hours are sent as **minutes** (`minutes: 480`) to avoid decimals. The UI shows hours.
+Hours are sent as **minutes** (`minutes: 480`, 0–960 per day) to avoid decimals. The UI shows hours. Errors: 400 `INVALID_WEEK` (not a Monday), `WEEK_OUTSIDE_DEPLOYMENT`, `INVALID_ENTRY_DATE`; 409 `TIMESHEET_EXISTS`, `TIMESHEET_LOCKED` (only DRAFT/REJECTED are editable), `INVALID_TIMESHEET_TRANSITION`, `STALE_VERSION`; 422 `TIMESHEET_EMPTY` on submit. Approvers: the client's portal users (own client only) and Finance; clients never see drafts. Submitting notifies the client's users and Finance; rejecting notifies the employee.
 
 ### 2.17 Invoices
 

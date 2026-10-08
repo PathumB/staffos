@@ -8,6 +8,8 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Deployments: account managers (or HR) deploy employees to client projects with dates and an hourly bill rate. Overlapping deployments are refused; deploying before onboarding is finished needs an HR Manager and a reason. Statuses move from planned to active to ended automatically.
+- Timesheets: employees (or HR on their behalf) enter daily hours for a week and submit them; the client and Finance are notified. The client approves or returns them with a comment; returned timesheets can be corrected and resubmitted. Bulk approve for approvers.
 - Careers site (public): browse open roles by keyword, emirate and category (client names only when allowed), apply with a CV and consent (bot check with Cloudflare Turnstile, 5 applications per hour per network), get a confirmation email with a private tracking link showing a simple status, and request a copy or deletion of your data. New applicants appear in the job's pipeline and the recruiter is notified.
 - Documents: upload CVs, passports, visas, Emirates IDs, labour cards, medicals and contracts for candidates and employees (PDF, Word, JPG, PNG up to 10 MB). Files are private; downloads use a link valid for 5 minutes and every view is recorded. Identity documents are visible only to HR and the employee. Numbers are masked.
 - Expiry alerts: every morning HR is alerted (in the app and by email) 30 and 7 days before a passport, visa, Emirates ID, labour card or medical expires, and a renewal task is created. An "Expiring documents" page lists what needs renewing.

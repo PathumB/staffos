@@ -648,3 +648,101 @@ export async function seedDemoHr(prisma: PrismaClient): Promise<void> {
     },
   });
 }
+
+/**
+ * A deployed demo worker on Gulf Build's "Dubai South Logistics Hub" with two approved weeks and
+ * one waiting for client@staffos.demo to approve; the onboarding demo employee gets a planned
+ * deployment from their start date (HR override, as their checklist isn't finished). Idempotent.
+ */
+export async function seedDemoWorkforce(prisma: PrismaClient): Promise<void> {
+  const project = await prisma.project.findFirst({
+    where: { name: 'Dubai South Logistics Hub', client: { trn: DEMO_CLIENT_TRN } },
+  });
+  if (!project) return;
+  const hr = await prisma.user.findUniqueOrThrow({ where: { email: 'hr@staffos.demo' } });
+  const am = await prisma.user.findUniqueOrThrow({ where: { email: 'am@staffos.demo' } });
+  const clientUser = await prisma.user.findUniqueOrThrow({
+    where: { email: 'client@staffos.demo' },
+  });
+  const day = 86_400_000;
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const dow = today.getUTCDay();
+  const thisMonday = new Date(today.getTime() - ((dow + 6) % 7) * day);
+  const monday = (weeksAgo: number) => new Date(thisMonday.getTime() - weeksAgo * 7 * day);
+
+  const position = await prisma.position.findUnique({ where: { title: 'Steel Fixer' } });
+  const worker = await prisma.employee.upsert({
+    where: { employeeNumber: 'EMP-000002' },
+    update: {},
+    create: {
+      employeeNumber: 'EMP-000002',
+      firstName: 'Ahmed',
+      lastName: 'Siddiqui',
+      email: 'ahmed.siddiqui@workers.example',
+      phone: '+971 50 222 3344',
+      status: 'ACTIVE',
+      hireDate: monday(8),
+      salaryFils: 380_000,
+      departmentId: position?.departmentId ?? null,
+      positionId: position?.id ?? null,
+      createdById: hr.id,
+    },
+  });
+  if (!(await prisma.deployment.count({ where: { employeeId: worker.id } }))) {
+    const deployment = await prisma.deployment.create({
+      data: {
+        employeeId: worker.id,
+        projectId: project.id,
+        clientId: project.clientId,
+        startDate: monday(5),
+        billRateFils: 4_500,
+        status: 'ACTIVE',
+        createdById: am.id,
+      },
+    });
+    for (const [weeksAgo, status] of [
+      [3, 'APPROVED'],
+      [2, 'APPROVED'],
+      [1, 'SUBMITTED'],
+    ] as const) {
+      const weekStart = monday(weeksAgo);
+      const minutes = [540, 540, 480, 540, 480, 300]; // Monday to Saturday
+      await prisma.timesheet.create({
+        data: {
+          deploymentId: deployment.id,
+          employeeId: worker.id,
+          clientId: project.clientId,
+          weekStart,
+          status,
+          totalMinutes: minutes.reduce((a, b) => a + b, 0),
+          submittedAt: new Date(weekStart.getTime() + 6 * day),
+          decidedAt: status === 'APPROVED' ? new Date(weekStart.getTime() + 8 * day) : null,
+          decidedById: status === 'APPROVED' ? clientUser.id : null,
+          createdById: hr.id,
+          entries: {
+            create: minutes.map((m, i) => ({
+              date: new Date(weekStart.getTime() + i * day),
+              minutes: m,
+            })),
+          },
+        },
+      });
+    }
+  }
+
+  const joseph = await prisma.employee.findUnique({ where: { employeeNumber: 'EMP-000001' } });
+  if (joseph && !(await prisma.deployment.count({ where: { employeeId: joseph.id } }))) {
+    await prisma.deployment.create({
+      data: {
+        employeeId: joseph.id,
+        projectId: project.id,
+        clientId: project.clientId,
+        startDate: joseph.hireDate,
+        billRateFils: 5_000,
+        status: 'PLANNED',
+        overrideReason: 'Visa approved; medical booked before start. Client start date agreed.',
+        createdById: hr.id,
+      },
+    });
+  }
+}

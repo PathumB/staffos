@@ -21,6 +21,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { CareersModule } from './modules/careers/careers.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { DeploymentsModule } from './modules/deployments/deployments.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
@@ -31,6 +32,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OffersModule } from './modules/offers/offers.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { SettingsModule } from './modules/settings/settings.service';
+import { TimesheetsModule } from './modules/timesheets/timesheets.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -79,6 +81,8 @@ import { UsersModule } from './modules/users/users.module';
     OnboardingModule,
     DocumentsModule,
     CareersModule,
+    DeploymentsModule,
+    TimesheetsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
