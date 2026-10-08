@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       // Generous per-test budget for slow local machines; CI finishes far below it.
       testTimeout: 20_000,
       globals: true,
-      setupFiles: ['./src/test/setup.ts'],
+      setupFiles: ['./src/test/isolate.ts', './src/test/setup.ts'],
       css: false,
     },
   };
