@@ -365,3 +365,48 @@ Review notes (owner): what AI got wrong, what I changed
 - Notification preferences (which events to email) are not configurable yet.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Documents
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** Continue; the owner wants the remaining phases finished as fast as possible.
+
+**AI produced:**
+
+- **`StorageProvider`:**
+  - `LocalDiskStorage` (dev): HMAC-signed, expiring links served by a public `/files/:token` route; relative URLs so they work through the same-origin proxy
+  - `SupabaseStorage` (prod): private bucket via the REST API, so no SDK dependency
+  - keys are generated server-side and pattern-checked
+- **Documents API:**
+  - upload with magic-byte type detection, file-name sanitising and a 10 MB limit
+  - identity types limited to `documents:read-identity` (403 for recruiters)
+  - owner scoping through the existing candidate and employee scopes
+  - 5-minute signed URLs, audited as `DOCUMENT_VIEWED`
+  - metadata edit (a new expiry date resets alerts), soft delete, and the `expiring` list
+- **Nightly expiry job** (`JobsService.schedule`, 06:00 Dubai):
+  - thresholds 30/7 days (expired counts as 7), deduplicated by the unique (document, threshold) row
+  - renewal `Task` plus HR notification, with email through the outbox
+- **Notifications outbox:** now claims a whole batch with one `UPDATE … RETURNING … FOR UPDATE SKIP LOCKED`. The per-row claims were too slow with a backlog.
+- **Web:**
+  - documents panel on employee and candidate pages (upload dialog, download, delete, expiry badges)
+  - Expiring documents page for HR
+  - `apiFetch` sends `FormData`
+- **Tests:**
+  - API 286 (+12): identity 403s, invalid files, signed URL headers/tamper/expiry, audit of views, employee self-access, the alert thresholds once each, soft delete
+  - web 37 (+1)
+
+**Decisions / deviations (and why):**
+
+- **Deleting a document is a soft delete and the stored file is kept**, for history and the audit trail. Hard purge belongs to a retention policy (later).
+- **Recruiters can't upload identity documents either**, not only view them, so identity data never sits in recruiter-managed records.
+- **Local storage in production only logs a warning.** Render's disk is ephemeral; set `STORAGE_PROVIDER=supabase` before go-live.
+
+**Known gaps:**
+
+- Renewal tasks are created but there is no task inbox UI yet (dashboards module).
+- No virus scanning: there is no free hosted option within the constraints; magic-byte checks and attachment-only downloads limit the risk.
+
+**Review notes (owner):** _to be written by @pathum_

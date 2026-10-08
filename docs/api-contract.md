@@ -305,7 +305,10 @@ Employees are created only by the hire transition (or by the seed).
 | GET | `/documents/:id/url` (S) | `documents:read` (+ `documents:read-identity` for identity types) → `{ url, expiresAt }` (5 min); audited |
 | PATCH | `/documents/:id` (S) | `documents:write` (metadata only) |
 | DELETE | `/documents/:id` (S) | `documents:write`. Soft delete |
-| GET | `/documents/expiring?withinDays=30` | `documents:read-identity` |
+| GET | `/documents/expiring?withinDays=30` | `documents:read-identity`. Tracked employee documents (identity + medical) expiring within N days or already expired, with `ownerName` |
+| GET | `/files/:token` (P) | Local storage provider only: the signed link from `/documents/:id/url` (HMAC, 5 min). Always `Content-Disposition: attachment`, `Cache-Control: private, no-store` |
+
+Upload: the real type is detected from the file's first bytes (pdf, docx, jpg, png; max 10 MB) → 422 `INVALID_FILE`; identity types without `documents:read-identity` → 403 `IDENTITY_DOCUMENT_FORBIDDEN`; an already-expired document is saved with `warnings: ['ALREADY_EXPIRED']`. Numbers are masked (`••••5678`) in every response. Nightly at 06:00 Dubai, HR gets an in-app + email alert and a renewal task when a document reaches 30 or 7 days (or has expired), once per threshold.
 
 Document type: `CV | PASSPORT | VISA | EMIRATES_ID | LABOUR_CARD | MEDICAL | CERTIFICATE | CONTRACT | OTHER`.
 

@@ -58,11 +58,14 @@ async function send(
     credentials: 'same-origin',
     headers: {
       Accept: 'application/json',
-      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      // FormData sets its own multipart boundary header.
+      ...(body === undefined || body instanceof FormData
+        ? {}
+        : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
   });
 }
 

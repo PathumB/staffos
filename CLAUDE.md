@@ -233,6 +233,7 @@ STORAGE_PROVIDER=local          # local | supabase
 SUPABASE_URL=
 SUPABASE_SERVICE_KEY=
 SUPABASE_BUCKET=documents
+STORAGE_LOCAL_DIR=uploads
 
 MAIL_PROVIDER=console           # console | ethereal | smtp
 SMTP_HOST=

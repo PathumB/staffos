@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ClipboardList,
   Contact,
+  FileClock,
   IdCard,
   LayoutDashboard,
   ListChecks,
@@ -63,6 +64,12 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/employees', label: 'Employees', icon: IdCard, permission: 'employees:read' },
       { to: '/onboarding', label: 'Onboarding', icon: ListChecks, permission: 'onboarding:read' },
+      {
+        to: '/documents/expiring',
+        label: 'Expiring documents',
+        icon: FileClock,
+        permission: 'onboarding-templates:manage',
+      },
       {
         to: '/departments',
         label: 'Departments',

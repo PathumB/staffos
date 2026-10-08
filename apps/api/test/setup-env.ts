@@ -1,3 +1,4 @@
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 
@@ -15,3 +16,6 @@ process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-0123456789abcdef';
 process.env.MAIL_PROVIDER = 'console';
 process.env.CORS_ORIGINS = 'http://localhost:5173';
 process.env.APP_URL = 'http://localhost:5173';
+// Uploads go to a throwaway folder, never the dev uploads directory.
+process.env.STORAGE_PROVIDER = 'local';
+process.env.STORAGE_LOCAL_DIR = path.join(tmpdir(), 'staffos-test-uploads');

@@ -19,6 +19,7 @@ import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetai
 import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
 import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
 import { JobsPage } from '@/features/recruitment/pages/JobsPage';
+import { ExpiringDocumentsPage } from '@/features/documents/pages/ExpiringDocumentsPage';
 import { EmployeeDetailPage } from '@/features/employees/pages/EmployeeDetailPage';
 import { EmployeesPage } from '@/features/employees/pages/EmployeesPage';
 import { OrgPage } from '@/features/employees/pages/OrgPage';
@@ -128,6 +129,14 @@ export const routes = [
             element: (
               <RequirePermission permissions={['onboarding:read']}>
                 <PlanDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/documents/expiring',
+            element: (
+              <RequirePermission permissions={['documents:read-identity']}>
+                <ExpiringDocumentsPage />
               </RequirePermission>
             ),
           },

@@ -133,28 +133,28 @@ export class NotificationsService {
   }
 
   /**
-   * Outbox sender (every minute). Each row is claimed with a conditional update first, so two API
-   * instances never email the same notification; the mail job itself retries delivery.
+   * Outbox sender (every minute). The mail job itself retries delivery.
    */
   async sendPendingEmails(now = new Date()): Promise<number> {
-    const pending = await this.prisma.notification.findMany({
-      where: {
-        sendEmail: true,
-        emailedAt: null,
-        createdAt: { gte: new Date(now.getTime() - EMAIL_MAX_AGE_MS) },
-        user: { status: 'ACTIVE' },
-      },
+    // Claim a batch in one statement; SKIP LOCKED lets several API instances share the work
+    // without ever emailing the same row twice. Fixed SQL, no user input.
+    const since = new Date(now.getTime() - EMAIL_MAX_AGE_MS);
+    const claimed = await this.prisma.$queryRaw<{ id: string }[]>`
+      UPDATE notifications SET emailed_at = ${now}
+      WHERE id IN (
+        SELECT id FROM notifications
+        WHERE send_email AND emailed_at IS NULL AND created_at >= ${since}
+        ORDER BY created_at
+        LIMIT ${EMAIL_BATCH}
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING id`;
+    if (claimed.length === 0) return 0;
+    const rows = await this.prisma.notification.findMany({
+      where: { id: { in: claimed.map((r) => r.id) }, user: { status: 'ACTIVE' } },
       include: { user: { select: { email: true, firstName: true } } },
-      orderBy: { createdAt: 'asc' },
-      take: EMAIL_BATCH,
     });
-    let sent = 0;
-    for (const n of pending) {
-      const { count } = await this.prisma.notification.updateMany({
-        where: { id: n.id, emailedAt: null },
-        data: { emailedAt: now },
-      });
-      if (count === 0) continue;
+    for (const n of rows) {
       try {
         await this.mail.send(
           notificationEmail(n.user.email, n.user.firstName, {
@@ -163,11 +163,11 @@ export class NotificationsService {
             url: n.link ? `${this.appUrl}${n.link}` : undefined,
           }),
         );
-        sent += 1;
       } catch (err) {
         this.logger.warn({ err, notificationId: n.id }, 'Notification email not queued');
       }
     }
-    return sent;
+    // Rows claimed, including those skipped for inactive users, so callers can drain a backlog.
+    return claimed.length;
   }
 }

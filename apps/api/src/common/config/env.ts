@@ -48,6 +48,15 @@ export const envSchema = z
     SMTP_PORT: z.preprocess(blankToUndefined, z.coerce.number().int().optional()),
     SMTP_USER: optionalString,
     SMTP_PASS: optionalString,
+    STORAGE_PROVIDER: z.preprocess(
+      blankToUndefined,
+      z.enum(['local', 'supabase']).default('local'),
+    ),
+    /** Local provider only: folder for uploads (git-ignored). */
+    STORAGE_LOCAL_DIR: z.preprocess(blankToUndefined, z.string().default('uploads')),
+    SUPABASE_URL: z.preprocess(blankToUndefined, z.url().optional()),
+    SUPABASE_SERVICE_KEY: optionalString,
+    SUPABASE_BUCKET: z.preprocess(blankToUndefined, z.string().default('documents')),
     MAIL_FROM: z.preprocess(
       blankToUndefined,
       z.string().default('StaffOS <no-reply@staffos.local>'),
@@ -56,6 +65,12 @@ export const envSchema = z
   .superRefine((env, ctx) => {
     const issue = (path: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [path], message });
+    if (env.STORAGE_PROVIDER === 'supabase' && (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY)) {
+      issue(
+        'SUPABASE_URL',
+        'SUPABASE_URL and SUPABASE_SERVICE_KEY are required for supabase storage',
+      );
+    }
     if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
       issue('DATABASE_URL', 'is required in production');
     }

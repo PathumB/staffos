@@ -1,5 +1,6 @@
 export * from './auth.js';
 export * from './crm.js';
+export * from './documents.js';
 export * from './domain.js';
 export * from './enums.js';
 export * from './errors.js';

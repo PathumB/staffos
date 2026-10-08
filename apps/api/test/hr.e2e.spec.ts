@@ -452,13 +452,19 @@ describeWithDb('HR core, onboarding and notifications', () => {
 
     it('emails pending notifications once, after they were committed', async () => {
       const service = app.get(NotificationsService);
+      // Start from an empty outbox: the shared test database keeps rows from earlier runs.
+      await prisma.notification.updateMany({
+        where: { sendEmail: true, emailedAt: null },
+        data: { emailedAt: new Date() },
+      });
       await service.notify([finance.id], {
         type: 'test.mail',
         title: 'Invoice ready',
         link: '/invoices',
       });
       await service.notify([finance.id], { type: 'test.quiet', title: 'No email', email: false });
-      await service.sendPendingEmails();
+      // Drain the outbox: other tests may have queued more than one batch.
+      while ((await service.sendPendingEmails()) > 0);
       const toFinance = send.mock.calls
         .map(([m]) => m)
         .filter((m) => m.subject === 'Invoice ready');

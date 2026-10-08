@@ -14,11 +14,13 @@ import { AppValidationPipe } from './common/validation/validation.pipe';
 import { JobsModule } from './infra/jobs/jobs.module';
 import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { StorageModule } from './infra/storage/storage.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
@@ -57,6 +59,7 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
     JobsModule,
     MailModule,
+    StorageModule,
     AuthCoreModule,
     AuditModule,
     NotificationsModule,
@@ -73,6 +76,7 @@ import { UsersModule } from './modules/users/users.module';
     OffersModule,
     EmployeesModule,
     OnboardingModule,
+    DocumentsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

@@ -18,6 +18,8 @@ const PUBLIC_ROUTES = new Set([
   'POST auth/password-reset/request',
   'POST auth/password-reset/confirm',
   'POST auth/invitations/accept',
+  // Signed, 5-minute download links for the local storage provider: the URL is the credential.
+  'GET files/:token',
 ]);
 
 /** security.md §11: fails if any route lacks an access policy or is unexpectedly public. */

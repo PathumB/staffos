@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { DocumentsPanel } from '@/features/documents/components/DocumentsPanel';
 import { usePlan } from '@/features/onboarding/api';
 import { OnboardingChecklist } from '@/features/onboarding/components/OnboardingChecklist';
 import { ApiClientError } from '@/lib/api-client';
@@ -144,6 +145,11 @@ export function EmployeeDetailPage() {
             </dl>
           </CardContent>
         </Card>
+        {can('documents:read') && (
+          <div className="lg:col-span-2">
+            <DocumentsPanel ownerType="EMPLOYEE" ownerId={e.id} canUpload={isHr || isSelf} />
+          </div>
+        )}
       </div>
 
       <EmployeeFormDialog

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { DocumentsPanel } from '@/features/documents/components/DocumentsPanel';
 import { ApiClientError } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/format';
 import { useAddApplication, useApplications, useCandidate, useJobs } from '../api';
@@ -158,6 +159,9 @@ export function CandidateDetailPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="grid content-start gap-4 lg:col-span-2">
+          {can('documents:read') && (
+            <DocumentsPanel ownerType="CANDIDATE" ownerId={c.id} canUpload />
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Applications</CardTitle>
