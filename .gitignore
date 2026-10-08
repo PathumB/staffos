@@ -11,6 +11,8 @@ apps/api/src/generated/
 .env
 .env.*
 !.env.example
+# Non-secret build flags for the web app (Vite reads it on production builds).
+!apps/web/.env.production
 
 # Uploads (LocalDiskStorage)
 /uploads/
