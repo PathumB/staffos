@@ -1,4 +1,5 @@
 export * from './auth.js';
+export * from './careers.js';
 export * from './crm.js';
 export * from './documents.js';
 export * from './domain.js';

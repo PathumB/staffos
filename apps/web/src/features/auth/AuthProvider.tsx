@@ -22,10 +22,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
 
   useEffect(() => {
+    let hadUser = false;
     const off = onSessionChange((user) => {
       setState(user ? { status: 'authenticated', user } : { status: 'anonymous', user: null });
-      // Never show one user's cached data to the next.
-      if (!user) queryClient.clear();
+      // Never show one user's cached data to the next. Only when someone was signed in: an
+      // anonymous first load has nothing private cached, and clearing would orphan in-flight
+      // public queries (careers site). Public data itself is never cleared.
+      if (!user && hadUser) {
+        queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'careers' });
+      }
+      hadUser = Boolean(user);
     });
     // Restore the session from the refresh cookie on page load.
     void refreshSession();

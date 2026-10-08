@@ -19,6 +19,7 @@ import { ApplicationsModule } from './modules/applications/applications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
+import { CareersModule } from './modules/careers/careers.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { EmployeesModule } from './modules/employees/employees.module';
@@ -77,6 +78,7 @@ import { UsersModule } from './modules/users/users.module';
     EmployeesModule,
     OnboardingModule,
     DocumentsModule,
+    CareersModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

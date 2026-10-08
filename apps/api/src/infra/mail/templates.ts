@@ -115,3 +115,25 @@ export function notificationEmail(
     html: layout(n.title, lines, action),
   };
 }
+
+export function applicationReceivedEmail(
+  to: string,
+  firstName: string,
+  jobTitle: string,
+  trackingUrl: string,
+): MailMessage {
+  const lines = [
+    `Hi ${firstName},`,
+    `Thank you for applying for ${jobTitle}. We have received your application and CV.`,
+    'Use the link below to check its status at any time, or to ask for a copy or deletion of your data. Keep it private: anyone with the link can see your status.',
+  ];
+  return {
+    to,
+    subject: `Application received: ${jobTitle}`,
+    text: `${lines.join('\n\n')}\n\n${trackingUrl}`,
+    html: layout('Application received', lines, {
+      label: 'Track my application',
+      url: trackingUrl,
+    }),
+  };
+}

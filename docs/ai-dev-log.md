@@ -410,3 +410,36 @@ Review notes (owner): what AI got wrong, what I changed
 - No virus scanning: there is no free hosted option within the constraints; magic-byte checks and attachment-only downloads limit the risk.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — Careers portal
+
+**Tool:** Claude Code (Opus 5.5)
+
+**AI produced:**
+
+- **Public API:**
+  - open jobs with public fields only; client name only when `showClientName`
+  - apply: CAPTCHA, CV type check, email dedupe, consent timestamp, private CV, APPLIED application with history, hashed tracking token, recruiter notification, confirmation email
+  - tracking: a candidate-friendly status, never internal stages or reasons
+  - data requests: `DataSubjectRequest` plus an HR task, audited
+- **CAPTCHA:** Cloudflare Turnstile (free) via `CaptchaService`. It fails closed when configured and is skipped when unset (dev/tests); the CSP allows its script and frame.
+- **Rate limits:** apply 5/hour/IP (`CAREERS_APPLY_RATE_LIMIT_PER_HOUR`, raised only for E2E), tracking 30/min, data requests 5/hour.
+- **Web:**
+  - public `/careers` layout, job board, job page with apply form, tracking page with export/delete requests
+  - Turnstile widget only when `VITE_TURNSTILE_SITE_KEY` is set
+- **Tests:**
+  - API +6, including a real 429 (throttling switched on for that test)
+  - E2E journey 1 completed: apply on the careers site → tracking page → the recruiter sees the candidate in the Applied column
+
+**What AI got wrong and fixed during the task:**
+
+- **The careers list stayed on "Loading…" forever.** On an anonymous first load the failed session refresh called `queryClient.clear()`, which orphaned the in-flight public query.
+  - The cache is now cleared only when a signed-in user's session ends, and never for `careers` queries.
+  - Found by reproducing in a headless browser with request logging.
+- **The documents commit missed `infra/storage`.** An unanchored `storage/` rule in `.gitignore` hid it, which broke CI. Ignore rules are now anchored.
+
+**Known gaps:** CV text extraction and AI parsing of applicant CVs come with the AI module.
+
+**Review notes (owner):** _to be written by @pathum_

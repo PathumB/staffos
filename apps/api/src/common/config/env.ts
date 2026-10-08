@@ -57,6 +57,8 @@ export const envSchema = z
     SUPABASE_URL: z.preprocess(blankToUndefined, z.url().optional()),
     SUPABASE_SERVICE_KEY: optionalString,
     SUPABASE_BUCKET: z.preprocess(blankToUndefined, z.string().default('documents')),
+    /** Cloudflare Turnstile (free CAPTCHA) for the public apply form; unset = not checked. */
+    TURNSTILE_SECRET_KEY: optionalString,
     MAIL_FROM: z.preprocess(
       blankToUndefined,
       z.string().default('StaffOS <no-reply@staffos.local>'),

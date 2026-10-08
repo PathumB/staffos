@@ -19,6 +19,10 @@ import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetai
 import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
 import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
 import { JobsPage } from '@/features/recruitment/pages/JobsPage';
+import { CareersLayout } from '@/features/careers/components/CareersLayout';
+import { CareerJobPage } from '@/features/careers/pages/CareerJobPage';
+import { CareersPage } from '@/features/careers/pages/CareersPage';
+import { TrackPage } from '@/features/careers/pages/TrackPage';
 import { ExpiringDocumentsPage } from '@/features/documents/pages/ExpiringDocumentsPage';
 import { EmployeeDetailPage } from '@/features/employees/pages/EmployeeDetailPage';
 import { EmployeesPage } from '@/features/employees/pages/EmployeesPage';
@@ -44,6 +48,15 @@ export const routes = [
     ],
   },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  // Public careers site (no session).
+  {
+    element: <CareersLayout />,
+    children: [
+      { path: '/careers', element: <CareersPage /> },
+      { path: '/careers/track/:token', element: <TrackPage /> },
+      { path: '/careers/:slug', element: <CareerJobPage /> },
+    ],
+  },
   { path: '/accept-invite', element: <AcceptInvitePage /> },
   {
     element: <RequireAuth />,

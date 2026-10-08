@@ -8,6 +8,7 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Careers site (public): browse open roles by keyword, emirate and category (client names only when allowed), apply with a CV and consent (bot check with Cloudflare Turnstile, 5 applications per hour per network), get a confirmation email with a private tracking link showing a simple status, and request a copy or deletion of your data. New applicants appear in the job's pipeline and the recruiter is notified.
 - Documents: upload CVs, passports, visas, Emirates IDs, labour cards, medicals and contracts for candidates and employees (PDF, Word, JPG, PNG up to 10 MB). Files are private; downloads use a link valid for 5 minutes and every view is recorded. Identity documents are visible only to HR and the employee. Numbers are masked.
 - Expiry alerts: every morning HR is alerted (in the app and by email) 30 and 7 days before a passport, visa, Emirates ID, labour card or medical expires, and a renewal task is created. An "Expiring documents" page lists what needs renewing.
 - Employees: list and profile for every hired person (department, position, status, start date, pay for HR/Finance), edits with a full audit trail, and "Invite to StaffOS" so a new hire can sign in. Employees see only their own profile and can update their own contact details. Terminating someone cancels their open onboarding and closes their login.

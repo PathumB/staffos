@@ -279,7 +279,7 @@ Offer status: `PENDING_APPROVAL → APPROVED → SENT → ACCEPTED | DECLINED`; 
 | --- | --- | --- |
 | GET | `/careers/jobs` (P) | `OPEN` jobs only. Filters: `search`, `emirate`, `category`. Public fields only. |
 | GET | `/careers/jobs/:slug` (P) | |
-| POST | `/careers/jobs/:slug/apply` (P) | Multipart: `firstName, lastName, email, phone, coverNote?, consent=true, turnstileToken, file` → `201 { message, trackingUrl }`. 409 `ALREADY_APPLIED`; 429 |
+| POST | `/careers/jobs/:slug/apply` (P) | Multipart: `firstName, lastName, email, phone, coverNote?, consent=true, turnstileToken?, file` (CV: pdf/docx, magic-byte checked) → `201 { message, trackingUrl }`. Candidate deduplicated by email; CV stored privately; recruiters notified; confirmation email with the link. 400 `CAPTCHA_FAILED` (when `TURNSTILE_SECRET_KEY` is set), 409 `ALREADY_APPLIED`, 422 `INVALID_FILE`, 429 (5/hour/IP) |
 | GET | `/careers/applications/:token` (P) | `{ jobTitle, appliedAt, publicStatus: RECEIVED|IN_REVIEW|INTERVIEW|OFFER|CLOSED }` |
 | POST | `/careers/applications/:token/data-request` (P) | `{ type: EXPORT|DELETE }` → `202` |
 
