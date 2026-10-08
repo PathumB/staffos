@@ -9,6 +9,10 @@
       {
         "include": "modules/auth/data/*.txt",
         "watchAssets": true
+      },
+      {
+        "include": "modules/ai/prompts/*.md",
+        "watchAssets": true
       }
     ]
   }

@@ -19,6 +19,7 @@ import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetai
 import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
 import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
 import { JobsPage } from '@/features/recruitment/pages/JobsPage';
+import { AiUsagePage } from '@/features/ai/pages/AiUsagePage';
 import { CareersLayout } from '@/features/careers/components/CareersLayout';
 import { CareerJobPage } from '@/features/careers/pages/CareerJobPage';
 import { CareersPage } from '@/features/careers/pages/CareersPage';
@@ -195,6 +196,14 @@ export const routes = [
             element: (
               <RequirePermission permissions={['invoices:read']}>
                 <InvoicePage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/ai-usage',
+            element: (
+              <RequirePermission permissions={['ai:usage-read']}>
+                <AiUsagePage />
               </RequirePermission>
             ),
           },

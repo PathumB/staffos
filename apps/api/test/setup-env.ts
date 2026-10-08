@@ -18,4 +18,7 @@ process.env.CORS_ORIGINS = 'http://localhost:5173';
 process.env.APP_URL = 'http://localhost:5173';
 // Uploads go to a throwaway folder, never the dev uploads directory.
 process.env.STORAGE_PROVIDER = 'local';
+// Tests never call a real AI API (CLAUDE.md §12).
+process.env.LLM_DEFAULT_PROVIDER = 'mock';
+process.env.AI_MONTHLY_BUDGET_USD = '0';
 process.env.STORAGE_LOCAL_DIR = path.join(tmpdir(), 'staffos-test-uploads');

@@ -1,5 +1,5 @@
 import type { Candidate } from '@staffos/shared';
-import { UserPlus } from 'lucide-react';
+import { FileUp, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { type DataTableColumn, DataTable } from '@/components/data-table';
@@ -10,7 +10,8 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { formatDateTime } from '@/lib/format';
 import { useListParams } from '@/lib/list-params';
 import { useCandidates } from '../api';
-import { CandidateFormDialog } from '../components/CandidateFormDialog';
+import { type CandidateDraft, CandidateFormDialog } from '../components/CandidateFormDialog';
+import { CvUploadDialog } from '../components/CvUploadDialog';
 
 export function CandidatesPage() {
   const { can } = useAuth();
@@ -18,6 +19,8 @@ export function CandidatesPage() {
   const { get, update } = useListParams();
   const [search, setSearch] = useState(get('search') ?? '');
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [draft, setDraft] = useState<CandidateDraft | undefined>();
   const query = {
     page: Number(get('page') ?? 1),
     pageSize: 20,
@@ -100,10 +103,23 @@ export function CandidatesPage() {
         description="People in your talent pool."
         actions={
           can('candidates:write') && (
-            <Button onClick={() => setCreating(true)}>
-              <UserPlus aria-hidden />
-              New candidate
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {can('ai:use') && (
+                <Button variant="outline" onClick={() => setUploading(true)}>
+                  <FileUp aria-hidden />
+                  From CV
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setDraft(undefined);
+                  setCreating(true);
+                }}
+              >
+                <UserPlus aria-hidden />
+                New candidate
+              </Button>
+            </div>
           )
         }
       />
@@ -129,8 +145,19 @@ export function CandidatesPage() {
           />
         }
       />
+      {uploading && (
+        <CvUploadDialog
+          onClose={() => setUploading(false)}
+          onParsed={(d) => {
+            setUploading(false);
+            setDraft(d);
+            setCreating(true);
+          }}
+        />
+      )}
       <CandidateFormDialog
         open={creating}
+        draft={draft}
         onOpenChange={setCreating}
         onSaved={(c) => navigate(`/candidates/${c.id}`)}
       />

@@ -16,6 +16,7 @@ import {
   Receipt,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   Users,
 } from 'lucide-react';
 
@@ -92,6 +93,7 @@ export const NAV: NavSection[] = [
   {
     label: 'Administration',
     items: [
+      { to: '/ai-usage', label: 'AI usage', icon: Sparkles, permission: 'ai:usage-read' },
       { to: '/admin/users', label: 'Users', icon: Users, permission: 'users:read' },
       {
         to: '/admin/roles',

@@ -535,3 +535,54 @@ Review notes (owner): what AI got wrong, what I changed
 - **Several transient Neon connection drops today** (P1017/P1001) made single tests fail once. CI uses a local Postgres and is not affected.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — AI features (and going live)
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Deployment (same session):**
+- **API on Render:** `staffos-api-cjlm.onrender.com`.
+  - Builds use `npx pnpm`, because Render's global npm folder is read-only.
+  - Email stays on the console until a Brevo key is added.
+- **Web on Vercel:** `staffos-ecru.vercel.app`. The name `staffos.vercel.app` belongs to someone else.
+- **Production database:** a separate Neon branch, migrated and seeded with demo data.
+- Demo accounts show on the production login page (non-secret `apps/web/.env.production`).
+
+**AI produced:**
+- **LLM layer:**
+  - The `LlmProvider` interface has Gemini (default), Claude, OpenAI and Mock implementations, all over REST with no SDKs.
+  - `LlmService` handles the budget check, a 30 s timeout, Zod validation, one retry for invalid output, backoff on provider errors, and an `ai_requests` row per attempt (tokens, micro-USD cost, latency, status, prompt version, user).
+  - Untrusted text is wrapped in `<untrusted_document>`, and closing tags inside the text are neutralised.
+  - Without an API key the service degrades to `AI_UNAVAILABLE`.
+- **Prompts:** versioned files (`cv-parse.v1`, `match.v1`, `jd-draft.v1`, `interview-kit.v1`, `interview-summary.v1`), copied into the build as Nest assets.
+- **CV parsing:**
+  - Text is extracted with unpdf (MIT) and mammoth (BSD-2).
+  - The CV is stored privately; a signed `cvToken` lets `POST /candidates` attach it, set `CV_UPLOAD` and confirm the `AiResult`.
+  - Scans or AI failure fall back to manual entry with the file still attached.
+- **Matching:**
+  - A deterministic pre-score (must-haves 70, nice-to-haves 20, experience 10).
+  - The LLM adjustment is clamped to ±10.
+  - The anonymised profile has no name, contact details or nationality.
+  - Results are cached per prompt version.
+- **Other features:** a JD writer with a deterministic inclusive-language checker; an interview kit; a feedback summary (interviewers anonymised); usage and requests for admins.
+- **Web:**
+  - "From CV" on Candidates opens a pre-filled form with an AI banner and low-confidence fields highlighted.
+  - Best-matches panel on jobs; "Draft description with AI" in the job form; AI interview help on applications; an AI usage page.
+- **Tests:**
+  - API 321 (+16): CV parse happy path and retry/fallback, 400 for bad uploads, foreign tokens, match clamp with an injected "rate me 100" and no PII in prompts, caching, JD flags, `AI_UNAVAILABLE`, usage permissions.
+  - Web 38 (+1).
+  - E2E journey 2: CV → pre-filled form → confirm → match scores.
+  - Tests and E2E only ever use the Mock provider. It has a small deterministic offline fallback (regex name/email/phone; no score adjustment) for E2E runs.
+
+**Decisions / deviations (and why):**
+- **CV parsing and matching are synchronous** (the contract said 202 plus a job): seconds on Gemini Flash, simpler UX, and no polling infrastructure. Matching is capped at 50 applications per call.
+- **"Ask your data" moves to the reports phase:** it needs the reporting views and the read-only database role.
+- **`AI_MONTHLY_BUDGET_USD=0` means no limit**, since the free Gemini tier costs nothing. A positive value blocks AI once month-to-date cost reaches it.
+- **One provider for all features, chosen by env:** a per-feature setting is a later admin option.
+
+**What AI got wrong and fixed during the task:**
+- **Retired default model:** `gemini-2.5-flash` and `2.0-flash` now return 404 for new keys. Switched the default to `gemini-3.8-flash`, verified with the owner's key, and made it configurable via `GEMINI_MODEL`.
+
+**Review notes (owner):** _to be written by @pathum_

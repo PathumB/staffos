@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/states';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MatchPanel } from '@/features/ai/components/MatchPanel';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { ApiClientError } from '@/lib/api-client';
 import { useJob, useJobAction, usePipeline } from '../api';
@@ -126,6 +127,12 @@ export function JobDetailPage() {
             </div>
           )}
         </section>
+      )}
+
+      {can('ai:use') && can('applications:read') && (
+        <div className="mb-6">
+          <MatchPanel jobId={j.id} />
+        </div>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">

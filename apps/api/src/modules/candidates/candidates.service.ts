@@ -17,6 +17,7 @@ import {
 } from '../../common/scoping/recruitment-scope';
 import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { CvDraftService } from '../ai/cv-draft.service';
 import { AuditService } from '../audit/audit.service';
 
 const include = {
@@ -67,6 +68,7 @@ export class CandidatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly cvDrafts: CvDraftService,
   ) {}
 
   async list(query: CandidateListQuery, actor: Actor): Promise<Paginated<Candidate>> {
@@ -134,12 +136,15 @@ export class CandidatesService {
         },
       );
     }
-    const { skills, ...fields } = input;
+    const { skills, cvToken, ...fields } = input;
+    // From POST /ai/cv-parse: attach the uploaded CV and link the AI suggestion (US-CAND-01).
+    const cv = cvToken ? this.cvDrafts.verify(cvToken, actor.id) : null;
     return this.prisma.$transaction(async (tx) => {
       const created = toCandidate(
         await tx.candidate.create({
           data: {
             ...fields,
+            ...(cv ? { source: 'CV_UPLOAD' as const } : {}),
             createdById: actor.id,
             skills: { create: skills.map((s) => ({ name: s.name, years: s.years })) },
           },
@@ -147,8 +152,32 @@ export class CandidatesService {
         }),
         false,
       );
+      if (cv) {
+        await tx.document.create({
+          data: {
+            candidateId: created.id,
+            type: 'CV',
+            fileName: cv.fileName,
+            storageKey: cv.storageKey,
+            mimeType: cv.mimeType,
+            sizeBytes: cv.sizeBytes,
+            createdById: actor.id,
+          },
+        });
+        if (cv.aiResultId) {
+          await tx.aiResult.updateMany({
+            where: { id: cv.aiResultId, confirmedAt: null },
+            data: { confirmedAt: new Date(), entityType: 'candidate', entityId: created.id },
+          });
+        }
+      }
       await this.audit.record(
-        { action: 'CREATE', entity: 'candidate', entityId: created.id, after: snapshot(created) },
+        {
+          action: 'CREATE',
+          entity: 'candidate',
+          entityId: created.id,
+          after: { ...snapshot(created), fromCv: Boolean(cv), aiAssisted: Boolean(cv?.aiResultId) },
+        },
         tx,
       );
       return created;

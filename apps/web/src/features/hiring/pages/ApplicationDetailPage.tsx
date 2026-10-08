@@ -7,6 +7,7 @@ import { ActionDialog } from '@/components/action-dialog';
 import { ErrorState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AiInterviewTools } from '@/features/ai/components/AiInterviewTools';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useJob, useTransition } from '@/features/recruitment/api';
 import { StageBadge } from '@/features/recruitment/components/badges';
@@ -103,6 +104,7 @@ export function ApplicationDetailPage() {
           {can('offers:read') && (
             <OffersPanel application={a} canCreate={canManage && can('offers:write')} />
           )}
+          {can('ai:use') && <AiInterviewTools jobId={a.job.id} applicationId={a.id} />}
         </div>
         <Card className="self-start">
           <CardHeader>

@@ -20,6 +20,8 @@ import {
 import { Input, NativeSelect, Textarea } from '@/components/ui/input';
 import { ApiClientError } from '@/lib/api-client';
 import { optionalNumber } from '@/lib/list-params';
+import { JdDraftAssist } from '@/features/ai/components/JdDraftAssist';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useSaveJob, useStaff } from '../api';
 import { SkillsEditor } from './SkillsEditor';
 
@@ -42,9 +44,11 @@ export function JobFormDialog({
   const recruiters = useStaff('RECRUITER', open);
   const managers = useStaff('HIRING_MANAGER', open);
   const [serverError, setServerError] = useState<string | null>(null);
-  const { register, control, handleSubmit, reset, setError, formState } = useForm<Values>({
-    resolver: zodResolver(jobCreateSchema),
-  });
+  const { can } = useAuth();
+  const { register, control, handleSubmit, reset, setError, getValues, setValue, formState } =
+    useForm<Values>({
+      resolver: zodResolver(jobCreateSchema),
+    });
   const e = formState.errors;
 
   useEffect(() => {
@@ -251,6 +255,20 @@ export function JobFormDialog({
           >
             {(p) => <Textarea {...p} {...register('description')} className="min-h-28" />}
           </FormField>
+          {can('ai:use') && (
+            <JdDraftAssist
+              className="sm:col-span-2"
+              getInput={() => {
+                const v = getValues();
+                return {
+                  title: v.title ?? '',
+                  location: v.location,
+                  skills: (v.skills ?? []).map((s) => s.name).filter(Boolean),
+                };
+              }}
+              onDraft={(draft) => setValue('description', draft, { shouldDirty: true })}
+            />
+          )}
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input
               type="checkbox"

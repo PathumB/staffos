@@ -57,6 +57,8 @@ export default defineConfig({
             // Every page load refreshes the session; the whole suite shares one IP.
             REFRESH_RATE_LIMIT_PER_MIN: '600',
             CAREERS_APPLY_RATE_LIMIT_PER_HOUR: '200',
+            // E2E never calls a real AI API: the mock answers deterministically (CLAUDE.md §12).
+            LLM_DEFAULT_PROVIDER: 'mock',
             // Locally E2E writes to the test branch, never the dev database.
             ...(process.env.DATABASE_URL_TEST && !isCI
               ? { DATABASE_URL: process.env.DATABASE_URL_TEST }

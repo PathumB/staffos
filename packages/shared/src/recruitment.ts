@@ -170,6 +170,8 @@ export const candidateCreateSchema = z.strictObject({
   languages: candidateFields.languages.default([]),
   skills: candidateFields.skills.default([]),
   source: candidateSourceSchema.exclude(['CAREERS_PORTAL', 'CV_UPLOAD']).default('MANUAL'),
+  /** From POST /ai/cv-parse: attaches the uploaded CV and links the AI suggestion (source becomes CV_UPLOAD). */
+  cvToken: z.string().max(4_000).optional(),
 });
 export type CandidateCreate = z.input<typeof candidateCreateSchema>;
 export type CandidateCreateData = z.output<typeof candidateCreateSchema>;

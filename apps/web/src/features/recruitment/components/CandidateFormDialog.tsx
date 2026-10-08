@@ -22,6 +22,19 @@ import { useSaveCandidate } from '../api';
 import { SkillsEditor } from './SkillsEditor';
 
 type Values = z.input<typeof candidateCreateSchema>;
+
+/** A profile suggested from an uploaded CV (US-CAND-01); the recruiter confirms or edits it. */
+export type CandidateDraft = {
+  values: Partial<Values>;
+  cvToken: string;
+  fileName: string;
+  /** Fields the AI was unsure about (confidence < 0.7): highlighted for checking. */
+  lowConfidence: ReadonlySet<string>;
+  aiAssisted: boolean;
+};
+
+const CHECK = 'AI was unsure about this: please check.';
+const LOW = 'rounded-md bg-warning/10 p-2 ring-1 ring-warning/40';
 const empty: Values = {
   firstName: '',
   lastName: '',
@@ -39,11 +52,13 @@ export function CandidateFormDialog({
   open,
   onOpenChange,
   candidate,
+  draft,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   candidate?: Candidate;
+  draft?: CandidateDraft;
   onSaved?: (candidate: Candidate) => void;
 }) {
   const save = useSaveCandidate();
@@ -73,9 +88,11 @@ export function CandidateFormDialog({
             skills: candidate.skills.map((s) => ({ name: s.name, years: s.years ?? undefined })),
             languages: candidate.languages,
           }
-        : empty,
+        : draft
+          ? { ...empty, ...draft.values, cvToken: draft.cvToken }
+          : empty,
     );
-  }, [open, candidate, reset]);
+  }, [open, candidate, draft, reset]);
 
   const submit = async (values: Values, force = false) => {
     try {
@@ -115,6 +132,21 @@ export function CandidateFormDialog({
         <DialogHeader>
           <DialogTitle>{candidate ? 'Edit candidate' : 'New candidate'}</DialogTitle>
         </DialogHeader>
+        {draft && (
+          <p
+            role="note"
+            className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm"
+          >
+            {draft.aiAssisted ? (
+              <>
+                <strong>AI-assisted suggestion</strong> from {draft.fileName}. Check every field
+                before saving; highlighted ones need a closer look.
+              </>
+            ) : (
+              <>{draft.fileName} will be attached to the candidate. Please fill the fields.</>
+            )}
+          </p>
+        )}
         <form
           id="candidate-form"
           onSubmit={handleSubmit((v) => submit(v))}
@@ -149,22 +181,52 @@ export function CandidateFormDialog({
               </div>
             </div>
           )}
-          <FormField label="First name" error={e.firstName?.message}>
+          <FormField
+            label="First name"
+            error={e.firstName?.message}
+            hint={draft?.lowConfidence.has('firstName') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('firstName') ? LOW : undefined}
+          >
             {(p) => <Input {...p} {...register('firstName')} />}
           </FormField>
-          <FormField label="Last name" error={e.lastName?.message}>
+          <FormField
+            label="Last name"
+            error={e.lastName?.message}
+            hint={draft?.lowConfidence.has('lastName') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('lastName') ? LOW : undefined}
+          >
             {(p) => <Input {...p} {...register('lastName')} />}
           </FormField>
-          <FormField label="Email" error={e.email?.message}>
+          <FormField
+            label="Email"
+            error={e.email?.message}
+            hint={draft?.lowConfidence.has('email') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('email') ? LOW : undefined}
+          >
             {(p) => <Input {...p} {...register('email')} type="email" />}
           </FormField>
-          <FormField label="Phone" error={e.phone?.message}>
+          <FormField
+            label="Phone"
+            error={e.phone?.message}
+            hint={draft?.lowConfidence.has('phone') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('phone') ? LOW : undefined}
+          >
             {(p) => <Input {...p} {...register('phone')} type="tel" />}
           </FormField>
-          <FormField label="Current title" error={e.currentTitle?.message}>
+          <FormField
+            label="Current title"
+            error={e.currentTitle?.message}
+            hint={draft?.lowConfidence.has('currentTitle') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('currentTitle') ? LOW : undefined}
+          >
             {(p) => <Input {...p} {...register('currentTitle')} />}
           </FormField>
-          <FormField label="Experience (years)" error={e.totalExperienceMonths?.message}>
+          <FormField
+            label="Experience (years)"
+            error={e.totalExperienceMonths?.message}
+            hint={draft?.lowConfidence.has('totalExperienceMonths') ? CHECK : undefined}
+            className={draft?.lowConfidence.has('totalExperienceMonths') ? LOW : undefined}
+          >
             {(p) => (
               <Controller
                 control={control}

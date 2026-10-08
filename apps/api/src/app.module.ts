@@ -13,9 +13,11 @@ import { loggerParams } from './common/logging/logger.config';
 import { AppValidationPipe } from './common/validation/validation.pipe';
 import { DomainEventsModule } from './infra/events/domain-events.service';
 import { JobsModule } from './infra/jobs/jobs.module';
+import { LlmModule } from './infra/llm/llm.service';
 import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { StorageModule } from './infra/storage/storage.module';
+import { AiModule } from './modules/ai/ai.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -66,6 +68,7 @@ import { UsersModule } from './modules/users/users.module';
     MailModule,
     StorageModule,
     DomainEventsModule,
+    LlmModule,
     AuthCoreModule,
     AuditModule,
     NotificationsModule,
@@ -87,6 +90,7 @@ import { UsersModule } from './modules/users/users.module';
     DeploymentsModule,
     TimesheetsModule,
     InvoicesModule,
+    AiModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

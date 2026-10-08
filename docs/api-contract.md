@@ -410,8 +410,8 @@ All AI endpoints are rate limited, logged to `ai_requests`, and return `422 AI_U
 
 | Method | Path | perm | Response |
 | --- | --- | --- | --- |
-| POST | `/ai/cv-parse` | `ai:use` | `{ documentId }` → `202 { jobId }`; result `ParsedCv` |
-| POST | `/ai/match/:jobId` | `ai:use` (S) | `202 { jobId }`; results stored per application |
+| POST | `/ai/cv-parse` | `ai:use` + `candidates:write` | Multipart `file` (pdf/docx ≤ 10 MB; else 400 `INVALID_UPLOAD`) → `200 { cvToken, fileName, parsed: ParsedCv | null, message }` (synchronous; `parsed` is null with a message when AI is unavailable or the PDF is a scan). Pass `cvToken` to `POST /candidates` to attach the CV, set `source=CV_UPLOAD` and confirm the AI result |
+| POST | `/ai/match/:jobId` | `ai:use` (S) | Ranks up to 50 active applications synchronously → same shape as GET; cached per application and prompt version |
 | GET | `/ai/match/:jobId` | `ai:use` (S) | `[{ applicationId, score, preScore, adjustment, matched[], partial[], missing[], explanation, promptVersion }]` |
 | POST | `/ai/jd-draft` | `ai:use` | `{ title, industry, location, salaryBand?, skills[] }` → `200 { draft, inclusiveLanguageFlags[] }` |
 | POST | `/ai/interview-kit` | `ai:use` (S) | `{ jobId }` → `200 { technical[], behavioural[], rubric[] }` |

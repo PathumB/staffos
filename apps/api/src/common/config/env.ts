@@ -57,6 +57,18 @@ export const envSchema = z
     SUPABASE_URL: z.preprocess(blankToUndefined, z.url().optional()),
     SUPABASE_SERVICE_KEY: optionalString,
     SUPABASE_BUCKET: z.preprocess(blankToUndefined, z.string().default('documents')),
+    LLM_DEFAULT_PROVIDER: z.preprocess(
+      blankToUndefined,
+      z.enum(['gemini', 'claude', 'openai', 'mock']).default('gemini'),
+    ),
+    GEMINI_API_KEY: optionalString,
+    GEMINI_MODEL: z.preprocess(blankToUndefined, z.string().default('gemini-3.8-flash')),
+    ANTHROPIC_API_KEY: optionalString,
+    CLAUDE_MODEL: z.preprocess(blankToUndefined, z.string().default('claude-haiku-4-5-20251001')),
+    OPENAI_API_KEY: optionalString,
+    OPENAI_MODEL: z.preprocess(blankToUndefined, z.string().default('gpt-4o-mini')),
+    /** Month-to-date AI spend limit in USD; 0 = no limit (the free Gemini tier costs nothing). */
+    AI_MONTHLY_BUDGET_USD: z.preprocess(blankToUndefined, z.coerce.number().min(0).default(0)),
     /** Cloudflare Turnstile (free CAPTCHA) for the public apply form; unset = not checked. */
     TURNSTILE_SECRET_KEY: optionalString,
     MAIL_FROM: z.preprocess(
