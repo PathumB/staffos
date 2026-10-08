@@ -16,3 +16,9 @@ ignoredBuiltDependencies:
   - '@parcel/watcher'
   - '@scarf/scarf'
   - unrs-resolver
+
+# Security patches for transitive deps pinned by Prisma's CLI (pnpm audit in CI).
+# Remove once Prisma ships the fixed versions.
+overrides:
+  deepmerge-ts: ^8.0.2 # GHSA-ggr8-5vv4-36mx (used by @prisma/config)
+  mysql2: ^3.24.5 # GHSA-3f6p-5ww8-9rcr (unused: we run Postgres)

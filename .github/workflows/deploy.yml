@@ -3,6 +3,9 @@ name: Deploy
 # Production deploys happen only from this pipeline, after CI passes on main.
 # Render's auto-deploy is off (render.yaml); Vercel deploys the web app from its Git integration.
 #
+# Enable by setting the repository variable DEPLOY_ENABLED=true (Settings → Secrets and variables
+# → Actions → Variables) once hosting exists; until then this workflow is skipped, not failed.
+#
 # Required repository secrets:
 #   PROD_DATABASE_URL       Neon `main` branch connection string (used for migrations)
 #   RENDER_DEPLOY_HOOK_URL  Render → staffos-api → Settings → Deploy Hook
@@ -24,7 +27,9 @@ permissions:
 
 jobs:
   deploy-api:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
