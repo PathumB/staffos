@@ -13,8 +13,9 @@ apps/api/src/generated/
 !.env.example
 
 # Uploads (LocalDiskStorage)
-uploads/
-storage/
+/uploads/
+apps/api/uploads/
+/storage/
 
 # Tests
 coverage/
