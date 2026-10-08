@@ -1,5 +1,7 @@
 # StaffOS
 
+[![CI](https://github.com/PathumB/staffos/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PathumB/staffos/actions/workflows/ci.yml) [![CodeQL](https://github.com/PathumB/staffos/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/PathumB/staffos/actions/workflows/codeql.yml)
+
 **An AI-powered workforce and recruitment platform for a staffing company** — one connected system from a client's manpower request to a hired worker deployed on site, timesheeted and invoiced.
 
 ```
