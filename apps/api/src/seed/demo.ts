@@ -559,3 +559,87 @@ export async function seedDemoHiring(prisma: PrismaClient): Promise<void> {
     });
   }
 }
+
+const DEMO_DEPARTMENTS: Record<string, string[]> = {
+  'Head office': ['Recruiter', 'HR Officer', 'Account Manager'],
+  Logistics: ['Forklift Operator', 'Warehouse Associate', 'Heavy Vehicle Driver'],
+  Construction: ['Site Electrician', 'Steel Fixer', 'Safety Officer'],
+  Healthcare: ['Registered Nurse', 'Healthcare Assistant'],
+  Facilities: ['Cleaner', 'Facilities Technician'],
+};
+
+/**
+ * Departments, positions, and an onboarding plan for the demo employee (Joseph Mwangi), who is
+ * about to start, so `employee@staffos.demo` has tasks to complete. Idempotent.
+ */
+export async function seedDemoHr(prisma: PrismaClient): Promise<void> {
+  for (const [name, titles] of Object.entries(DEMO_DEPARTMENTS)) {
+    const department = await prisma.department.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    for (const title of titles) {
+      await prisma.position.upsert({
+        where: { title },
+        update: {},
+        create: { title, departmentId: department.id },
+      });
+    }
+  }
+
+  const employee = await prisma.employee.findUnique({
+    where: { employeeNumber: 'EMP-000001' },
+    include: { onboardingPlan: true },
+  });
+  const template = await prisma.onboardingTemplate.findFirst({
+    where: { category: 'DRIVER', active: true },
+    include: { tasks: { orderBy: { sortOrder: 'asc' } } },
+  });
+  if (!employee || employee.onboardingPlan || !template) return;
+
+  const day = 86_400_000;
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const start = new Date(today.getTime() + 10 * day);
+  const logistics = await prisma.department.findUniqueOrThrow({ where: { name: 'Logistics' } });
+  const position = await prisma.position.findUniqueOrThrow({
+    where: { title: 'Heavy Vehicle Driver' },
+  });
+  const hr = await prisma.user.findUniqueOrThrow({ where: { email: 'hr@staffos.demo' } });
+  await prisma.employee.update({
+    where: { id: employee.id },
+    data: {
+      status: 'ONBOARDING',
+      hireDate: start,
+      departmentId: logistics.id,
+      positionId: position.id,
+      salaryFils: 450_000,
+    },
+  });
+  await prisma.onboardingPlan.create({
+    data: {
+      employeeId: employee.id,
+      templateId: template.id,
+      startDate: start,
+      tasks: {
+        create: template.tasks.map((t, i) => {
+          const dueDate = new Date(start.getTime() + t.dueOffsetDays * day);
+          // The earliest HR steps are already done, so the checklist shows progress.
+          const done = t.assigneeRole === 'HR_MANAGER' && t.dueOffsetDays <= -10;
+          return {
+            title: t.title,
+            description: t.description,
+            type: t.type,
+            assigneeRole: t.assigneeRole,
+            dueDate,
+            required: t.required,
+            sortOrder: i,
+            status: done ? ('DONE' as const) : ('PENDING' as const),
+            completedAt: done ? new Date(today.getTime() - day) : null,
+            completedById: done ? hr.id : null,
+          };
+        }),
+      },
+    },
+  });
+}

@@ -121,7 +121,7 @@ Scoping is applied **inside the service query** (a Prisma `where` built from the
 | --- | --- |
 | `SUPER_ADMIN`, `HR_MANAGER` | Unscoped |
 | `RECRUITER` | Jobs where they are in `job.recruiters`; applications on those jobs; candidates with an application on those jobs or created by them; documents of those candidates (non-identity only) |
-| `ACCOUNT_MANAGER` | Clients where `client.accountManagerId = me`, and everything under them (requests, jobs read-only, deployments, timesheets, invoices); employees currently or previously deployed to those clients |
+| `ACCOUNT_MANAGER` | Clients where `client.accountManagerId = me`, and everything under them (requests, jobs read-only, deployments, timesheets, invoices); employees currently or previously deployed to, or hired for, those clients (without pay) |
 | `HIRING_MANAGER` | Jobs where `job.hiringManagerId = me`; applications at stage ≥ `SHORTLISTED` on those jobs; offers on those applications (approves only those); interviews on those jobs or where they sit on the panel |
 | `FINANCE` | Unscoped within finance resources (deployments, timesheets, invoices, clients read) |
 | `EMPLOYEE` | `employee.userId = me`: own profile, documents, onboarding tasks, deployments, timesheets |

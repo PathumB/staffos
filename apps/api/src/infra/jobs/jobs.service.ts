@@ -16,6 +16,7 @@ export type JobHandler<T> = (data: T) => Promise<void>;
 export class JobsService implements OnApplicationBootstrap, OnApplicationShutdown {
   private boss?: PgBoss;
   private readonly handlers = new Map<string, JobHandler<unknown>>();
+  private readonly schedules = new Map<string, string>();
   private readonly connectionString?: string;
   private readonly inlineOnly: boolean;
 
@@ -29,6 +30,15 @@ export class JobsService implements OnApplicationBootstrap, OnApplicationShutdow
 
   register<T>(name: string, handler: JobHandler<T>): void {
     this.handlers.set(name, handler as JobHandler<unknown>);
+  }
+
+  /**
+   * Runs the handler on a cron schedule (UTC), e.g. '* * * * *'. pg-boss keeps one schedule per
+   * name across instances. Not run in tests/inline mode: tests call the handler's service directly.
+   */
+  schedule(name: string, cron: string, handler: JobHandler<object>): void {
+    this.register(name, handler);
+    this.schedules.set(name, cron);
   }
 
   async send<T extends object>(name: string, data: T): Promise<void> {
@@ -56,8 +66,12 @@ export class JobsService implements OnApplicationBootstrap, OnApplicationShutdow
           for (const job of jobs) await handler(job.data);
         });
       }
+      for (const [name, cron] of this.schedules) await boss.schedule(name, cron, {}, { tz: 'UTC' });
       this.boss = boss;
-      this.logger.info({ queues: [...this.handlers.keys()] }, 'Job queue started');
+      this.logger.info(
+        { queues: [...this.handlers.keys()], schedules: Object.fromEntries(this.schedules) },
+        'Job queue started',
+      );
     } catch (err) {
       this.logger.error({ err }, 'Job queue unavailable; running jobs inline');
       await boss.stop({ graceful: false }).catch(() => undefined);

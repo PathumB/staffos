@@ -8,6 +8,10 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Employees: list and profile for every hired person (department, position, status, start date, pay for HR/Finance), edits with a full audit trail, and "Invite to StaffOS" so a new hire can sign in. Employees see only their own profile and can update their own contact details. Terminating someone cancels their open onboarding and closes their login.
+- Onboarding: each new hire gets a checklist (documents, medical, visa, induction) with due dates from their start date. HR and the employee tick off their own tasks; HR can reassign, reschedule or reopen. When every required task is done, the employee becomes active and HR is notified. HR maintains the checklists per job category.
+- Notifications: a bell with unread count and the latest notifications; each is also emailed.
+- Departments and positions for HR.
 - Interviews: schedule, reschedule or cancel from the application page; the candidate and each interviewer get an email with a calendar invite in Dubai time. Interviewers submit a scorecard (1–5 per criterion, a recommendation and notes) that they can edit for 24 hours; recruiters are notified when the whole panel has scored. New "Interviews" list.
 - Offers: create an offer (salary, start date, contract), approval by the job's hiring manager or HR, then sent, accepted or declined, or withdrawn.
 - Hire: once the offer is accepted, "Hire" creates the employee record and an onboarding plan from the job category's checklist in one step, marks the job filled when its headcount is reached, and notifies the account manager.

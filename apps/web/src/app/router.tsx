@@ -19,8 +19,14 @@ import { CandidateDetailPage } from '@/features/recruitment/pages/CandidateDetai
 import { CandidatesPage } from '@/features/recruitment/pages/CandidatesPage';
 import { JobDetailPage } from '@/features/recruitment/pages/JobDetailPage';
 import { JobsPage } from '@/features/recruitment/pages/JobsPage';
+import { EmployeeDetailPage } from '@/features/employees/pages/EmployeeDetailPage';
+import { EmployeesPage } from '@/features/employees/pages/EmployeesPage';
+import { OrgPage } from '@/features/employees/pages/OrgPage';
 import { ApplicationDetailPage } from '@/features/hiring/pages/ApplicationDetailPage';
 import { InterviewsPage } from '@/features/hiring/pages/InterviewsPage';
+import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage';
+import { PlanDetailPage } from '@/features/onboarding/pages/PlanDetailPage';
+import { TemplatesPage } from '@/features/onboarding/pages/TemplatesPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './layout/AppLayout';
@@ -74,6 +80,54 @@ export const routes = [
             element: (
               <RequirePermission permissions={['interviews:write', 'interview-feedback:write']} any>
                 <InterviewsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/employees',
+            element: (
+              <RequirePermission permissions={['employees:read']}>
+                <EmployeesPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/employees/:id',
+            element: (
+              <RequirePermission permissions={['employees:read']}>
+                <EmployeeDetailPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/departments',
+            element: (
+              <RequirePermission permissions={['onboarding-templates:manage']}>
+                <OrgPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/onboarding',
+            element: (
+              <RequirePermission permissions={['onboarding:read']}>
+                <OnboardingPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/onboarding/templates',
+            element: (
+              <RequirePermission permissions={['onboarding-templates:manage']}>
+                <TemplatesPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/onboarding/:id',
+            element: (
+              <RequirePermission permissions={['onboarding:read']}>
+                <PlanDetailPage />
               </RequirePermission>
             ),
           },

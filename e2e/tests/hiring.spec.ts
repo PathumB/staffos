@@ -1,8 +1,8 @@
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
 import { captureDiagnostics } from './diagnostics';
 
-// Journey 3 (docs/00-master-plan.md §7): offer approved → sent → accepted → Hired, which creates
-// the employee and onboarding plan (verified in the API integration tests) and notifies the AM.
+// Journey 3 (docs/00-master-plan.md §7): offer approved → sent → accepted → Hired, which creates the
+// employee and onboarding plan and notifies the account manager; HR then works the checklist.
 const PASSWORD = 'StaffOS-Demo-2026!';
 captureDiagnostics();
 
@@ -43,18 +43,24 @@ async function apiAs(request: APIRequestContext, baseURL: string, email: string)
   return { id: user.id, call };
 }
 
-test('an accepted offer leads to a hire', async ({ page, request, baseURL }) => {
-  // Three users and ~20 setup calls: give it 3x the normal budget (locally Neon is ~4 s/request).
+test('an accepted offer leads to a hire, an onboarding plan and a notification', async ({
+  page,
+  request,
+  baseURL,
+}) => {
+  // Four users and ~20 setup calls: give it 3x the normal budget (locally Neon is ~4 s/request).
   test.slow();
   const unique = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
   const origin = baseURL!;
   const hr = await apiAs(request, origin, 'hr@staffos.demo');
   const recruiter = await apiAs(request, origin, 'recruiter@staffos.demo');
   const hm = await apiAs(request, origin, 'hm@staffos.demo');
+  const am = await apiAs(request, origin, 'am@staffos.demo');
 
   // Setup through the API: our own job (so repeated runs never fill a shared one) and a candidate
   // moved to the Offer stage with a pending offer.
-  const approved = await hr.call('GET', '/manpower-requests?pageSize=1&filter[status]=APPROVED');
+  // A request for one of the demo account manager's clients, so they are the one notified.
+  const approved = await am.call('GET', '/manpower-requests?pageSize=1&filter[status]=APPROVED');
   let job = await hr.call('POST', '/jobs', {
     manpowerRequestId: approved.data[0].id,
     title: `E2E Hire ${unique}`,
@@ -109,4 +115,23 @@ test('an accepted offer leads to a hire', async ({ page, request, baseURL }) => 
   await expect(
     page.getByRole('heading', { name: new RegExp(`Noura Hire ${unique}`) }),
   ).toContainText('Hired');
+
+  // The account manager sees the hire in the bell.
+  await signOut(page);
+  await signIn(page, 'am@staffos.demo');
+  await page.getByRole('button', { name: /^Notifications, \d+ unread$/ }).click();
+  await expect(
+    page.getByRole('menuitem', { name: new RegExp(`Hired: Noura Hire ${unique}`) }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // HR finds the new employee and ticks off the first HR task on the checklist.
+  await signOut(page);
+  await signIn(page, 'hr@staffos.demo');
+  await page.goto(`/employees?search=${encodeURIComponent(`Hire ${unique}`)}`);
+  await page.getByRole('link', { name: `Noura Hire ${unique}` }).click();
+  await expect(page.getByRole('progressbar', { name: 'Onboarding progress' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mark done' }).first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Mark done' }).click();
+  await expect(page.getByText('Task done.')).toBeVisible();
 });

@@ -287,11 +287,12 @@ Offer status: `PENDING_APPROVAL → APPROVED → SENT → ACCEPTED | DECLINED`; 
 
 | Method | Path | perm |
 | --- | --- | --- |
-| GET | `/employees` (S) | `employees:read`. Filters: `departmentId`, `status`, `clientId` (current deployment) |
+| GET | `/employees` (S) | `employees:read`. Filters: `departmentId`, `status`, `clientId` (active deployment); `search` (name, email, number). `salaryFils` is null unless the caller is HR, Finance or the employee |
 | GET | `/employees/:id` (S) | `employees:read` |
-| PATCH | `/employees/:id` (S) | `employees:write`. `EMPLOYEE` may only change contact fields |
+| PATCH | `/employees/:id` (S) | `employees:write`. `{ version, firstName?, lastName?, email?, phone?, departmentId?, positionId?, status?, salaryFils? }`. `EMPLOYEE` may only change `email`/`phone` on their own record (403 `EMPLOYEE_FIELDS_RESTRICTED`). 409 `STALE_VERSION`, `EMPLOYEE_TERMINATED`. Setting `TERMINATED` cancels an unfinished onboarding plan and deactivates the linked login |
+| POST | `/employees/:id/invite` (S) | `employees:write` (HR). Creates the EMPLOYEE login linked to the record and emails an invitation. 409 `EMPLOYEE_HAS_ACCOUNT`, `USER_EMAIL_EXISTS` |
 | GET | `/departments` · `/positions` | `employees:read` |
-| POST/PATCH | `/departments` · `/positions` | `employees:write` (HR) |
+| POST/PATCH | `/departments` · `/positions` | `employees:write` (HR only; 403 otherwise). 409 `DEPARTMENT_EXISTS` / `POSITION_EXISTS` |
 
 Employees are created only by the hire transition (or by the seed).
 
@@ -313,10 +314,10 @@ Document type: `CV | PASSPORT | VISA | EMIRATES_ID | LABOUR_CARD | MEDICAL | CER
 | Method | Path | perm |
 | --- | --- | --- |
 | GET/POST | `/onboarding-templates` | `onboarding-templates:manage` |
-| GET/PATCH/DELETE | `/onboarding-templates/:id` | `onboarding-templates:manage` |
+| GET/PATCH/DELETE | `/onboarding-templates/:id` | `onboarding-templates:manage`. Body: `{ name, category (null = default), active, tasks: [{ title, description?, type, assigneeRole: HR_MANAGER|EMPLOYEE, dueOffsetDays -90..180, required }] }`. PATCH replaces the tasks; existing plans keep their copies. 409 `TEMPLATE_CATEGORY_EXISTS`; DELETE 409 `TEMPLATE_IN_USE` (deactivate instead) |
 | GET | `/onboarding-plans` (S) | `onboarding:read`. Filters: `status`, `employeeId` |
-| GET | `/onboarding-plans/:id` (S) | `onboarding:read` |
-| POST | `/onboarding-tasks/:id/complete` (S) | `onboarding:write`. `{ note?, documentId? }` |
+| GET | `/onboarding-plans/:id` (S) | `onboarding:read`. With tasks; each task has `canComplete` for the caller |
+| POST | `/onboarding-tasks/:id/complete` (S) | `onboarding:write`. `{ note?, documentId? }`. HR Managers, the named assignee, or (unassigned) the employee for EMPLOYEE tasks; 403 `TASK_NOT_ASSIGNED_TO_YOU`, 409 `TASK_ALREADY_DONE` / `PLAN_NOT_ACTIVE`. The last required task completes the plan, sets the employee `ACTIVE` and notifies HR Managers |
 | POST | `/onboarding-tasks/:id/reopen` | `onboarding:write` (HR_MANAGER) |
 | PATCH | `/onboarding-tasks/:id` | `onboarding:write` (HR). Reassign / due date |
 
@@ -439,7 +440,8 @@ type Field<T> = { value: T; confidence: number };  // 0–1; < 0.7 highlighted i
 
 | Method | Path | perm |
 | --- | --- | --- |
-| GET | `/notifications?unread=true` | `notifications:read` (own) |
+| GET | `/notifications?unread=true` | `notifications:read` (own), newest first, paginated |
+| GET | `/notifications/unread-count` | `notifications:read` (own). `{ count }` for the bell |
 | POST | `/notifications/:id/read` | `notifications:read` (own) |
 | POST | `/notifications/read-all` | `notifications:read` (own) |
 

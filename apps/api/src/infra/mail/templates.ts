@@ -100,3 +100,18 @@ export function interviewEmail(e: InterviewEmail): MailMessage {
     icalEvent: { method: e.kind === 'cancelled' ? 'CANCEL' : 'REQUEST', content: e.ics },
   };
 }
+
+export function notificationEmail(
+  to: string,
+  firstName: string,
+  n: { title: string; body?: string | null; url?: string },
+): MailMessage {
+  const lines = [`Hi ${firstName},`, n.title, ...(n.body ? [n.body] : [])];
+  const action = n.url ? { label: 'Open in StaffOS', url: n.url } : undefined;
+  return {
+    to,
+    subject: n.title,
+    text: `${lines.join('\n\n')}${action ? `\n\n${action.url}` : ''}`,
+    html: layout(n.title, lines, action),
+  };
+}

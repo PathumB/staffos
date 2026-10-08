@@ -299,3 +299,69 @@ Review notes (owner): what AI got wrong, what I changed
 - Locally the hire E2E journey takes about 1.7 min because of the UAE→Ohio round trips; it is marked `test.slow()`.
 
 **Review notes (owner):** _to be written by @pathum_
+
+---
+
+## 2026-10-08 — HR core, onboarding and notifications
+
+**Tool:** Claude Code (Opus 5.5)
+
+**Asked:** "Go ahead and continue" with the next module.
+
+**AI produced:**
+
+- **Migration:**
+  - `employees.version` (optimistic locking, since HR and the employee can both edit)
+  - `notifications.send_email` / `emailed_at`, a transactional outbox
+- **Jobs:**
+  - `JobsService.schedule(name, cron, handler)` on pg-boss, which the nightly document-expiry job will reuse
+- **API:**
+  - `employees`:
+    - list and get, scoped: HR and Finance all; account managers see people deployed to or hired for their clients, without pay; employees see only themselves
+    - PATCH: HR edits everything; an employee may change only `email`/`phone` on their own record; `TERMINATED` cancels open onboarding and deactivates the login
+    - `POST /employees/:id/invite` creates the linked EMPLOYEE login
+    - departments and positions, HR-only writes
+  - `onboarding`:
+    - template CRUD; plans copy their tasks, so edits never touch existing plans; a template that is in use is deactivated rather than deleted
+    - plans with per-task `canComplete`
+    - complete / reopen / reassign
+    - the last required task completes the plan, activates the employee and notifies HR, all in one transaction
+  - `notifications`:
+    - inbox, unread count, mark read / read-all (own only)
+    - outbox sender every minute, claiming each row before mailing it
+- **Web:**
+  - notification bell in the header (polls every 60 s)
+  - Employees list and profile; an employee is sent straight to their own profile
+  - employee edit dialog: full for HR, contact-only for the employee
+  - onboarding checklist (progress bar, overdue, Mark done with note, HR Edit/Reopen)
+  - Onboarding list, plan page, checklist template editor, Departments and positions page
+- **Seed:**
+  - departments and positions
+  - the demo employee (Joseph Mwangi) is about to start, with a half-done driver checklist
+- **Tests:**
+  - API 274 (+17), including employee self-edit limits, AM scoping and pay masking, terminate side effects, invite once, task ownership, plan completion, template immutability for plans, and the email outbox sending once
+  - web 36 (+3)
+  - E2E journey 3 now also checks the account manager's bell and HR completing an onboarding task
+
+**Decisions / deviations (and why):**
+
+- **Notification emails use an outbox, not a direct send.**
+  - Rows are written in the business transaction; a scheduled job emails them after commit.
+  - This avoids emails about changes that were rolled back.
+  - Unsent rows older than 24 h are skipped.
+- **Completing onboarding sets the employee to ACTIVE.** The story only says "HR is notified", but a finished checklist is what makes someone ready to deploy (US-DEP-01).
+- **Template assignee roles are HR Manager and Employee only.** Recruiters have no onboarding permissions, so a task assigned to their role could never be completed.
+- **Departments and positions are an HR page gated by `onboarding-templates:manage`.** That is HR's distinguishing permission; `employees:write` is also held by employees, for their own contact details.
+- **Document links on tasks (`documentId`) are accepted and checked against the employee.** Uploading comes with the documents module.
+
+**What AI got wrong and fixed during the task:**
+
+- `z.preprocess` in form resolvers broke React Hook Form's types; switched to per-field `setValueAs` with `null` defaults.
+- The user list exposes `client`, not `clientId`.
+
+**Known gaps:**
+
+- Documents (upload, signed URLs, expiry alerts) are the next module.
+- Notification preferences (which events to email) are not configurable yet.
+
+**Review notes (owner):** _to be written by @pathum_

@@ -19,12 +19,14 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
 import { JobsModule as RecruitmentJobsModule } from './modules/jobs/jobs.module';
 import { ManpowerRequestsModule } from './modules/manpower-requests/manpower-requests.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OffersModule } from './modules/offers/offers.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { SettingsModule } from './modules/settings/settings.service';
 import { UsersModule } from './modules/users/users.module';
 
@@ -69,6 +71,8 @@ import { UsersModule } from './modules/users/users.module';
     ApplicationsModule,
     InterviewsModule,
     OffersModule,
+    EmployeesModule,
+    OnboardingModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

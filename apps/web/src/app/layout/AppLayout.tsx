@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { cn } from '@/lib/utils';
 import { useTheme } from '../theme';
 import { canSeeNavItem, NAV } from './nav';
@@ -145,7 +146,8 @@ export function AppLayout() {
             <Menu aria-hidden />
           </Button>
           <span className="font-semibold md:hidden">StaffOS</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
             <UserMenu />
           </div>
         </header>

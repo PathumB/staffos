@@ -2,7 +2,7 @@ import path from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config as loadEnv } from 'dotenv';
 import { PrismaClient } from '../generated/prisma/client';
-import { seedDemo, seedDemoCrm, seedDemoHiring, seedDemoRecruitment } from './demo';
+import { seedDemo, seedDemoCrm, seedDemoHiring, seedDemoHr, seedDemoRecruitment } from './demo';
 import { seedOnboardingTemplates } from './onboarding';
 import { seedRbac } from './rbac';
 
@@ -26,6 +26,7 @@ export async function runSeed(): Promise<void> {
       await seedDemoCrm(prisma);
       await seedDemoRecruitment(prisma);
       await seedDemoHiring(prisma);
+      await seedDemoHr(prisma);
       console.warn('Seeded demo accounts (see README → Demo accounts).');
     }
   } finally {

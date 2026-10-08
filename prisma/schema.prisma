@@ -1025,6 +1025,7 @@ model Employee {
   hireDate       DateTime       @map("hire_date") @db.Date
   salaryFils     Int?           @map("salary_fils")
   currency       String         @default("AED") @db.Char(3)
+  version        Int            @default(1)
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   createdById    String?        @map("created_by_id") @db.Uuid
@@ -1621,12 +1622,16 @@ model Notification {
   body      String?
   link      String?
   readAt    DateTime? @map("read_at") @db.Timestamptz(3)
+  /// Transactional outbox: rows with sendEmail are emailed by a scheduled job after commit.
+  sendEmail Boolean   @default(false) @map("send_email")
+  emailedAt DateTime? @map("emailed_at") @db.Timestamptz(3)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([sendEmail, emailedAt])
   @@map("notifications")
 }
 
