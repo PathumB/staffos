@@ -40,6 +40,8 @@ const MINUTE = 60_000;
  * signs in many times from one machine, isn't throttled; production keeps the default.
  */
 const loginLimit = () => Number(process.env.LOGIN_RATE_LIMIT_PER_MIN) || 10;
+/** Session refreshes per IP per minute (one per page load). Same override rule as login. */
+const refreshLimit = () => Number(process.env.REFRESH_RATE_LIMIT_PER_MIN) || 30;
 
 /**
  * Thin HTTP layer: cookies and status codes only; rules live in AuthService.
@@ -84,7 +86,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: MINUTE } })
+  @Throttle({ default: { limit: refreshLimit, ttl: MINUTE } })
   @ApiOperation({ summary: 'Rotate the refresh cookie and get a new access token' })
   @ApiZodOkResponse(loginResponseSchema)
   async refresh(

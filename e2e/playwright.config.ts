@@ -54,6 +54,8 @@ export default defineConfig({
             APP_URL: baseURL,
             // The suite signs in many times from one IP; production keeps 10/min.
             LOGIN_RATE_LIMIT_PER_MIN: '200',
+            // Every page load refreshes the session; the whole suite shares one IP.
+            REFRESH_RATE_LIMIT_PER_MIN: '600',
             // Locally E2E writes to the test branch, never the dev database.
             ...(process.env.DATABASE_URL_TEST && !isCI
               ? { DATABASE_URL: process.env.DATABASE_URL_TEST }
