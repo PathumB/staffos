@@ -16,6 +16,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnprocessableEntityResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import {
   type Feedback,
@@ -80,8 +81,11 @@ export class InterviewsController {
   @RequirePermissions('interviews:write')
   @ApiOperation({ summary: 'Active users who can interview (id, name, role)' })
   @ApiZodOkResponse(z.array(panelOptionSchema))
-  panelOptions(): Promise<PanelOption[]> {
-    return this.interviews.panelOptions();
+  @ApiQuery({ name: 'search', required: false, description: 'Name or email contains' })
+  panelOptions(@Query('search') search?: string): Promise<PanelOption[]> {
+    return this.interviews.panelOptions(
+      typeof search === 'string' ? search.slice(0, 100) : undefined,
+    );
   }
 
   @Get(':id')

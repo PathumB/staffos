@@ -188,8 +188,20 @@ describeWithDb('Recruitment part 2: interviews, offers, hire', () => {
 
     it('lists panel options (id, name, role) for schedulers only', async () => {
       const res = await http.get('/api/v1/interviews/panel-options').set(auth(rec1)).expect(200);
+      expect(res.body.length).toBeGreaterThan(0);
+      // The list is capped at 200; search finds specific people in a large test database.
+      const find = async (id: string) => {
+        const { email } = await prisma.user.findUniqueOrThrow({ where: { id } });
+        const r = await http
+          .get(`/api/v1/interviews/panel-options?search=${encodeURIComponent(email)}`)
+          .set(auth(rec1))
+          .expect(200);
+        return r.body.map((o: { id: string }) => o.id) as string[];
+      };
+      expect(await find(hm.id)).toEqual([hm.id]);
+      expect(await find(hr.id)).toEqual([hr.id]);
+      expect(await find(rec1.id)).toEqual([]); // recruiters don't interview
       const ids = res.body.map((o: { id: string }) => o.id);
-      expect(ids).toEqual(expect.arrayContaining([hm.id, hr.id]));
       expect(ids).not.toContain(rec1.id);
       expect(Object.keys(res.body[0]).sort()).toEqual(['id', 'name', 'role']);
       await http.get('/api/v1/interviews/panel-options').set(auth(hm)).expect(403);

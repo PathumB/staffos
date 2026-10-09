@@ -143,9 +143,23 @@ export class InterviewsService {
   }
 
   /** Active users who may give feedback, for the scheduling form. */
-  async panelOptions(): Promise<PanelOption[]> {
+  async panelOptions(search?: string): Promise<PanelOption[]> {
+    const q = search?.trim();
     const users = await this.prisma.user.findMany({
-      where: { status: 'ACTIVE', roles: { some: { role: { code: { in: PANEL_ROLES } } } } },
+      where: {
+        status: 'ACTIVE',
+        roles: { some: { role: { code: { in: PANEL_ROLES } } } },
+        // The list is capped, so large teams can narrow it down by name or email.
+        ...(q
+          ? {
+              OR: [
+                { firstName: { contains: q, mode: 'insensitive' as const } },
+                { lastName: { contains: q, mode: 'insensitive' as const } },
+                { email: { contains: q, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
       select: {
         id: true,
         firstName: true,
