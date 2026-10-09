@@ -34,6 +34,11 @@ export const envSchema = z
           .filter(Boolean),
       ),
     SWAGGER_ENABLED: optionalBool,
+    /** Proxies between the visitor and the API (2 on Render behind the Vercel rewrite). */
+    TRUST_PROXY_HOPS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(0).max(5).default(1),
+    ),
     DEMO_MODE: optionalBool,
     DATABASE_URL: optionalString,
     JWT_ACCESS_SECRET: secret,
@@ -73,6 +78,13 @@ export const envSchema = z
     WEBHOOK_SIGNING_SECRET: z.preprocess(blankToUndefined, secret.optional()),
     /** Cloudflare Turnstile (free CAPTCHA) for the public apply form; unset = not checked. */
     TURNSTILE_SECRET_KEY: optionalString,
+    /** Zoho CRM (free edition) self-client OAuth; all three unset = integration off. */
+    ZOHO_CLIENT_ID: optionalString,
+    ZOHO_CLIENT_SECRET: optionalString,
+    ZOHO_REFRESH_TOKEN: optionalString,
+    /** Data-centre hosts, e.g. https://accounts.zoho.eu / https://www.zohoapis.eu. */
+    ZOHO_ACCOUNTS_URL: z.preprocess(blankToUndefined, z.url().default('https://accounts.zoho.com')),
+    ZOHO_API_URL: z.preprocess(blankToUndefined, z.url().default('https://www.zohoapis.com')),
     MAIL_FROM: z.preprocess(
       blankToUndefined,
       z.string().default('StaffOS <no-reply@staffos.local>'),

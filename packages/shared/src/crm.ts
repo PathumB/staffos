@@ -92,7 +92,8 @@ const clientFields = {
 
 export const clientInputSchema = z.strictObject({
   ...clientFields,
-  vatRateBps: clientFields.vatRateBps.default(500),
+  /** Omitted = the admin's `vat.defaultRateBps` setting (5 % unless changed). */
+  vatRateBps: clientFields.vatRateBps.optional(),
   paymentTermsDays: clientFields.paymentTermsDays.default(30),
   status: clientFields.status.default('ACTIVE'),
 });

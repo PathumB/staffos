@@ -14,4 +14,6 @@ export * from './invoices.js';
 export * from './pagination.js';
 export * from './permissions.js';
 export * from './recruitment.js';
+export * from './reports.js';
 export * from './workforce.js';
+export * from './admin.js';

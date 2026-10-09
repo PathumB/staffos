@@ -18,9 +18,10 @@ export function configureApp(app: NestExpressApplication): void {
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
   app.useLogger(app.get(Logger));
-  // Render and Vercel sit in front of the API; trust one hop so req.ip is the real client
-  // (needed for rate limiting and the audit log).
-  app.set('trust proxy', 1);
+  // Proxies in front of the API: production has two (Vercel's rewrite, then Render's proxy), so
+  // req.ip is the visitor's address for rate limits and the audit log. Vercel overwrites
+  // X-Forwarded-For, so visitors can't spoof it through the web app.
+  app.set('trust proxy', config.get('TRUST_PROXY_HOPS', { infer: true }));
   // Express 5 defaults to the 'simple' parser; list endpoints need nested filter[status]=X.
   app.set('query parser', 'extended');
   app.setGlobalPrefix(API_PREFIX);

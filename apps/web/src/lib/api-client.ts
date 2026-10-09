@@ -96,3 +96,18 @@ export async function apiFetch<T>(
   }
   return schema.parse(await res.json());
 }
+
+/** Downloads a file endpoint (exports, PDFs) with the in-memory access token. */
+export async function apiDownload(path: string, filename: string): Promise<void> {
+  let res = await send(path, { headers: { Accept: '*/*' } });
+  if (res.status === 401 && getAccessToken() && (await refreshSession())) {
+    res = await send(path, { headers: { Accept: '*/*' } });
+  }
+  if (!res.ok) throw new ApiClientError(res.status, await toApiError(res));
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}

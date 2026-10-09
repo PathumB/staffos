@@ -24,6 +24,8 @@ services:
         value: '24'
       - key: NODE_ENV
         value: production
+      - key: TRUST_PROXY_HOPS
+        value: '2'
       - key: LOG_LEVEL
         value: info
       - key: SWAGGER_ENABLED

@@ -8,6 +8,13 @@ All notable user-visible changes are documented here. The format follows
 
 ### Added
 
+- Client portal home: client users land on their company's timesheets to approve, requests and invoices, with "Request staff".
+- Settings page (Super Admin): approval threshold, monthly AI budget and default VAT for new clients, all audited. Integration status for email, storage, AI, Zoho CRM and CAPTCHA, plus "Sync now" to push clients and contacts to Zoho CRM. System health shows the database, job queue, AI calls and recent failures; in demo mode "Reset demo data" re-applies the demo seed.
+- Interview panel picker can search by name or email (the list shows up to 200 people).
+- Dashboards per role: HR (hires, time to hire, expiring documents, onboarding, funnel), recruiters (my jobs and pipeline), account managers (my clients' open requests, deployments, unpaid invoices), Finance (timesheets awaiting approval, unpaid invoices, revenue chart). Numbers only include what you are allowed to see.
+- Reports: hiring funnel, time to hire, client revenue and open requests, with date and client filters and CSV, Excel or PDF export. Management gets a weekly summary email with a PDF every Monday at 08:00 (Dubai).
+- Ask your data (HR, Finance, admins): ask a question in plain English and get an answer, a table, a chart and the SQL used. Queries can only read the reporting views and are checked before they run.
+- My tasks: renewal and automation tasks for you or your role, with "Done".
 - Approval chains: Super Admins define ordered approval steps (one role each) for manpower requests and offers. Each step's role approves in turn; a rejection at any step ends it. "My approvals" lists what is waiting on you.
 - Automations: rules built without code (When an event happens, If conditions match, Then create a task, send an email, notify, assign a user, start an approval or call a webhook). Every run is logged with its input, result and error; failed runs can be retried and rules can be tested with sample data. Seeded rules: hire follow-ups, passport expiring in 30 days, and HR approval for requests over 20 people.
 - Webhooks: register https endpoints for application stage changes, hires and issued invoices. Deliveries are signed (`X-StaffOS-Signature`), retried up to 5 times with backoff, logged, and can be redelivered; secrets are shown once and can be rotated.

@@ -14,6 +14,16 @@ import { seedAutomations } from './automations';
 import { seedOnboardingTemplates } from './onboarding';
 import { seedRbac } from './rbac';
 
+/** All demo data, in dependency order. Also used by the admin "Reset demo data" action. */
+export async function seedAllDemo(prisma: PrismaClient): Promise<void> {
+  await seedDemo(prisma);
+  await seedDemoCrm(prisma);
+  await seedDemoRecruitment(prisma);
+  await seedDemoHiring(prisma);
+  await seedDemoHr(prisma);
+  await seedDemoWorkforce(prisma);
+}
+
 /**
  * `pnpm db:seed`: roles/permissions and onboarding templates always; demo data outside production
  * or in DEMO_MODE.
@@ -33,12 +43,7 @@ export async function runSeed(): Promise<void> {
     }
     const demoAllowed = process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true';
     if (demoAllowed && process.env.SEED_SCOPE !== 'rbac') {
-      await seedDemo(prisma);
-      await seedDemoCrm(prisma);
-      await seedDemoRecruitment(prisma);
-      await seedDemoHiring(prisma);
-      await seedDemoHr(prisma);
-      await seedDemoWorkforce(prisma);
+      await seedAllDemo(prisma);
       console.warn('Seeded demo accounts (see README → Demo accounts).');
     }
   } finally {

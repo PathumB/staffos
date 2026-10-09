@@ -21,6 +21,8 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import {
   aiRequestListQuerySchema,
+  askDataInputSchema,
+  askDataResponseSchema,
   aiRequestSchema,
   aiUsageSchema,
   cvParseResponseSchema,
@@ -38,10 +40,12 @@ import { CurrentActor, RequirePermissions } from '../../common/auth/decorators';
 import { ApiZodBody, ApiZodOkResponse, createZodDto } from '../../common/validation/zod';
 import type { UploadedFile as File } from '../documents/document.rules';
 import { AiService } from './ai.service';
+import { AskDataService } from './ask-data.service';
 
 class JdDto extends createZodDto(jdDraftInputSchema) {}
 class KitDto extends createZodDto(interviewKitInputSchema) {}
 class RequestsQueryDto extends createZodDto(aiRequestListQuerySchema) {}
+class AskDataDto extends createZodDto(askDataInputSchema) {}
 
 /** security.md §2: AI endpoints are limited to 20 calls per minute. */
 const AI_LIMIT = { default: { limit: 20, ttl: 60_000 } };
@@ -53,7 +57,22 @@ const unavailable = () =>
 @ApiTags('ai')
 @Controller('ai')
 export class AiController {
-  constructor(private readonly ai: AiService) {}
+  constructor(
+    private readonly ai: AiService,
+    private readonly askData: AskDataService,
+  ) {}
+
+  @Post('ask-data')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions('ai:ask-data')
+  @Throttle(AI_LIMIT)
+  @ApiOperation({
+    summary: 'Answer a question from the reporting views (read-only, shows the SQL)',
+  })
+  @ApiZodOkResponse(askDataResponseSchema)
+  ask(@Body() body: AskDataDto, @CurrentActor() actor: Actor) {
+    return this.askData.ask(body.question, actor);
+  }
 
   @Post('cv-parse')
   @HttpCode(HttpStatus.OK)

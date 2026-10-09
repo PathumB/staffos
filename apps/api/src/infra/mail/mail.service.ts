@@ -12,6 +12,8 @@ export type MailMessage = {
   html: string;
   /** Calendar invite (RFC 5545 text); mail clients show accept/decline buttons. */
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; content: string };
+  /** Base64 so the message stays JSON for the mail queue (nodemailer's own attachment shape). */
+  attachments?: { filename: string; content: string; encoding: 'base64'; contentType: string }[];
 };
 
 /** Swappable email transport (CLAUDE.md §3): console (dev), Ethereal (dev preview), SMTP (Brevo). */

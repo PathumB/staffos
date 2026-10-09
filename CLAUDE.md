@@ -220,6 +220,7 @@ SWAGGER_ENABLED=true
 DEMO_MODE=false
 VITE_DEMO_MODE=false
 LOGIN_RATE_LIMIT_PER_MIN=10
+TRUST_PROXY_HOPS=1             # 2 in production (Vercel rewrite + Render proxy)
 REFRESH_RATE_LIMIT_PER_MIN=30
 
 DATABASE_URL=
@@ -257,4 +258,6 @@ SENTRY_DSN=
 ZOHO_CLIENT_ID=
 ZOHO_CLIENT_SECRET=
 ZOHO_REFRESH_TOKEN=
+ZOHO_ACCOUNTS_URL=https://accounts.zoho.com
+ZOHO_API_URL=https://www.zohoapis.com
 ```

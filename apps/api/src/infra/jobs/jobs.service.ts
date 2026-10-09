@@ -52,6 +52,22 @@ export class JobsService implements OnApplicationBootstrap, OnApplicationShutdow
     await this.runInline(name, data);
   }
 
+  /** Jobs waiting across all queues (null when running inline without pg-boss). */
+  async queueDepth(): Promise<number | null> {
+    if (!this.boss) return null;
+    try {
+      const queues = await this.boss.getQueues([...this.handlers.keys()]);
+      return queues.reduce((sum, q) => sum + (q.queuedCount ?? 0), 0);
+    } catch (err) {
+      this.logger.warn({ err }, 'Could not read queue depth');
+      return null;
+    }
+  }
+
+  get mode(): 'pg-boss' | 'inline' {
+    return this.boss ? 'pg-boss' : 'inline';
+  }
+
   async onApplicationBootstrap(): Promise<void> {
     if (this.inlineOnly) {
       return;

@@ -53,6 +53,43 @@ test('a recruiter cannot open admin pages (UI and API)', async ({ page }) => {
   expect(status).toBe(403);
 });
 
+// Journey 5 (docs/00-master-plan.md §7): another client's data is invisible, by URL and by API.
+test("a client user cannot open another client's request (UI and API)", async ({
+  browser,
+  page,
+}) => {
+  // Find a request that belongs to a different client, as an admin.
+  const adminPage = await (await browser.newContext()).newPage();
+  await signIn(adminPage, 'admin@staffos.demo');
+  await expect(adminPage.getByRole('heading', { name: /Welcome/ })).toBeVisible();
+  const otherId = await adminPage.evaluate(async () => {
+    const refresh = await fetch('/api/v1/auth/refresh', { method: 'POST' });
+    const { accessToken } = (await refresh.json()) as { accessToken: string };
+    const res = await fetch('/api/v1/manpower-requests?pageSize=100', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const { data } = (await res.json()) as { data: { id: string; client: { name: string } }[] };
+    return data.find((r) => !r.client.name.startsWith('Gulf Build'))?.id;
+  });
+  expect(otherId).toBeTruthy();
+  await adminPage.context().close();
+
+  await signIn(page, 'client@staffos.demo');
+  await expect(page.getByRole('heading', { name: /Welcome/ })).toBeVisible();
+  await page.goto(`/requests/${otherId}`);
+  await expect(page.getByText('Manpower request not found.')).toBeVisible();
+  const status = await page.evaluate(async (id) => {
+    const refresh = await fetch('/api/v1/auth/refresh', { method: 'POST' });
+    const { accessToken } = (await refresh.json()) as { accessToken: string };
+    return (
+      await fetch(`/api/v1/manpower-requests/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+    ).status;
+  }, otherId);
+  expect(status).toBe(404); // not 403: the record's existence isn't revealed
+});
+
 test('wrong credentials show an error without revealing whether the account exists', async ({
   page,
 }) => {

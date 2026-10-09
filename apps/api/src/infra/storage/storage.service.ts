@@ -127,7 +127,12 @@ export class SupabaseStorage implements StorageProvider {
   private async call(pathname: string, init: RequestInit): Promise<Response> {
     const res = await fetch(`${this.url}/storage/v1${pathname}`, {
       ...init,
-      headers: { ...init.headers, Authorization: `Bearer ${this.serviceKey}` },
+      headers: {
+        ...init.headers,
+        // New sb_secret_ keys go in `apikey`; legacy service_role JWTs also need the Bearer.
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+      },
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) throw new Error(`Storage ${init.method} failed: ${res.status}`);

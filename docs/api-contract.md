@@ -449,6 +449,14 @@ type Field<T> = { value: T; confidence: number };  // 0–1; < 0.7 highlighted i
 | GET | `/reports/open-requests` (S) | `reports:read` |
 | GET | `/reports/:name/export?format=csv\|xlsx\|pdf` (S) | `reports:export` |
 
+Scoping: Super Admin, HR and Finance see all clients; account managers their clients; recruiters their assigned jobs (funnel and time to hire; revenue is 403). Filters: `from`, `to` (YYYY-MM-DD, Dubai), `clientId`, `jobId` (recruitment reports). Exports stream the file (`Content-Disposition: attachment`) and are audited.
+
+| Method | Path | perm | Notes |
+| --- | --- | --- | --- |
+| POST | `/ai/ask-data` | `ai:ask-data` (HR, Finance, Super Admin) | `{ question }` → `{ question, answer, sql, columns, rows (≤ 500), truncated, chart: { type, x, y } }`. 422 `UNSAFE_QUERY` / `QUERY_TIMEOUT` / `QUERY_FAILED` / `AI_UNAVAILABLE` |
+| GET | `/tasks?status=OPEN\|DONE` | any authenticated (own and own-role tasks) | Soonest due first |
+| POST | `/tasks/:id/complete` | any authenticated | 404 `TASK_NOT_FOUND` (not yours), 409 `TASK_ALREADY_DONE` |
+
 ### 2.21 Notifications
 
 | Method | Path | perm |
@@ -468,7 +476,7 @@ type Field<T> = { value: T; confidence: number };  // 0–1; < 0.7 highlighted i
 | GET | `/webhooks/:id/deliveries` | `webhooks:manage` |
 | POST | `/webhooks/deliveries/:id/redeliver` | `webhooks:manage`. Creates a new delivery with the same payload. Body: `{ id, event: 'employee.hired', createdAt, data }`; headers `X-StaffOS-Signature: sha256=<hex HMAC of body>`, `X-StaffOS-Event`, `X-StaffOS-Delivery` |
 | GET | `/integrations` | `integrations:manage`. Status of Zoho, mail, storage, LLM providers |
-| POST | `/integrations/zoho/sync` | `integrations:manage` → `202 { jobId }` |
+| POST | `/integrations/zoho/sync` | `integrations:manage` → `202 { jobId }`; 422 `INTEGRATION_NOT_CONFIGURED`. Pushes clients (Accounts) and contacts (Contacts) and stores `zohoId` |
 
 ### 2.23 Audit, settings, admin, jobs
 
@@ -476,6 +484,7 @@ type Field<T> = { value: T; confidence: number };  // 0–1; < 0.7 highlighted i
 | --- | --- | --- |
 | GET | `/audit-logs` | `audit:read`. Filters: `actorId`, `entity`, `entityId`, `action`, `createdAt` |
 | GET | `/settings` | `settings:manage` |
-| PATCH | `/settings` | `settings:manage`. Keys: `manpowerApprovalThreshold`, `documentExpiryAlertDays`, `retention.candidateMonths`, `ai.providerByFeature`, `ai.monthlyBudgetUsd`, `vat.defaultRateBps` |
-| POST | `/admin/demo-reset` | `settings:manage`, only when `DEMO_MODE=true` |
+| PATCH | `/settings` | `settings:manage`. Keys (implemented): `manpowerApprovalThreshold`, `ai.monthlyBudgetUsd` (overrides `AI_MONTHLY_BUDGET_USD`), `vat.defaultRateBps` (used when a new client omits `vatRateBps`). Unknown keys → 400 |
+| GET | `/admin/system` | `system:health-detail`. DB, queue mode/depth, AI calls (24 h), failed automation runs and webhook deliveries, unsent emails, last Zoho sync |
+| POST | `/admin/demo-reset` | `settings:manage`, only when `DEMO_MODE=true` (else 403 `DEMO_MODE_OFF`). `202`; re-applies the idempotent seed as a job |
 | GET | `/background-jobs/:jobId` | any authenticated (own jobs only). Background job status (named to avoid clashing with recruitment `/jobs`) |

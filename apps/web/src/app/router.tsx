@@ -39,6 +39,9 @@ import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage';
 import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage';
 import { PlanDetailPage } from '@/features/onboarding/pages/PlanDetailPage';
 import { TemplatesPage } from '@/features/onboarding/pages/TemplatesPage';
+import { ReportsPage } from '@/features/reports/pages/ReportsPage';
+import { TasksPage } from '@/features/reports/pages/TasksPage';
+import { SettingsPage } from '@/features/admin/pages/SettingsPage';
 import { RolesPage } from '@/features/users/pages/RolesPage';
 import { DeploymentsPage } from '@/features/workforce/pages/DeploymentsPage';
 import { TimesheetPage } from '@/features/workforce/pages/TimesheetPage';
@@ -276,6 +279,23 @@ export const routes = [
             ),
           },
           { path: '/approvals', element: <ApprovalsPage /> },
+          { path: '/tasks', element: <TasksPage /> },
+          {
+            path: '/reports',
+            element: (
+              <RequirePermission permissions={['reports:read']}>
+                <ReportsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/admin/settings',
+            element: (
+              <RequirePermission permissions={['settings:manage']}>
+                <SettingsPage />
+              </RequirePermission>
+            ),
+          },
           {
             path: '/admin/workflows',
             element: (

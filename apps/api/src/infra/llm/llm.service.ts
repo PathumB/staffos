@@ -123,7 +123,14 @@ export class LlmService {
     throw aiUnavailable();
   }
 
-  /** Month-to-date estimated spend vs AI_MONTHLY_BUDGET_USD (0 = no limit). */
+  /** The admin setting `ai.monthlyBudgetUsd` overrides AI_MONTHLY_BUDGET_USD when saved. */
+  private async budget(): Promise<number> {
+    const row = await this.prisma.setting.findUnique({ where: { key: 'ai.monthlyBudgetUsd' } });
+    const usd = typeof row?.value === 'number' && row.value >= 0 ? row.value : null;
+    return usd === null ? this.budgetMicroUsd : Math.round(usd * 1_000_000);
+  }
+
+  /** Month-to-date estimated spend vs the budget (0 = no limit). */
   async usage(): Promise<{ monthToDateMicroUsd: number; budgetMicroUsd: number }> {
     const start = new Date();
     start.setUTCDate(1);
@@ -134,13 +141,13 @@ export class LlmService {
     });
     return {
       monthToDateMicroUsd: agg._sum.estimatedCostMicroUsd ?? 0,
-      budgetMicroUsd: this.budgetMicroUsd,
+      budgetMicroUsd: await this.budget(),
     };
   }
 
   private async overBudget(): Promise<boolean> {
-    if (this.budgetMicroUsd <= 0) return false;
-    return (await this.usage()).monthToDateMicroUsd >= this.budgetMicroUsd;
+    const { monthToDateMicroUsd, budgetMicroUsd } = await this.usage();
+    return budgetMicroUsd > 0 && monthToDateMicroUsd >= budgetMicroUsd;
   }
 
   /** Prompts are versioned files: `## System` and `## User` sections with {{placeholders}}. */

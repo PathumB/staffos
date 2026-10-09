@@ -1,5 +1,6 @@
 import type { Permission } from '@staffos/shared';
 import {
+  BarChart3,
   Briefcase,
   Building2,
   CalendarClock,
@@ -12,6 +13,7 @@ import {
   IdCard,
   LayoutDashboard,
   ListChecks,
+  ListTodo,
   type LucideIcon,
   Network,
   Webhook,
@@ -19,6 +21,7 @@ import {
   Zap,
   Receipt,
   ScrollText,
+  Settings,
   ShieldCheck,
   Sparkles,
   Users,
@@ -44,7 +47,9 @@ export const NAV: NavSection[] = [
   {
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/tasks', label: 'My tasks', icon: ListTodo },
       { to: '/approvals', label: 'My approvals', icon: CheckSquare },
+      { to: '/reports', label: 'Reports', icon: BarChart3, permission: 'reports:read' },
     ],
   },
   {
@@ -110,6 +115,7 @@ export const NAV: NavSection[] = [
         icon: ShieldCheck,
         permission: 'users:read',
       },
+      { to: '/admin/settings', label: 'Settings', icon: Settings, permission: 'settings:manage' },
       {
         to: '/admin/workflows',
         label: 'Approval chains',

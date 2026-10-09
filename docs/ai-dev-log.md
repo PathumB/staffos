@@ -630,3 +630,73 @@ Review notes (owner): what AI got wrong, what I changed
 - **Parallel-run flake:** the delivery assertion now finds its own delivery by payload.
 
 **Review notes (owner):** _to be written by @pathum_
+
+## 2026-10-09 — Reports, dashboards, ask your data, task inbox
+
+**What was built:**
+- **Migration `reporting_views`:**
+  - `v_hiring_funnel` has one row per application per stage reached (history plus APPLIED).
+  - `v_time_to_hire`, `v_client_revenue` (ISSUED/PAID only) and `v_open_requests` (with age and hired count).
+  - Each view carries `client_id`, `account_manager_id` and, for the recruitment views, `recruiter_ids`, so the API can scope.
+  - A NOLOGIN role `staffos_report_reader` with SELECT on the views only, granted to the migrating user. The grant is skipped with a notice where roles can't be created.
+- **`reports` module:**
+  - Parameterised `Prisma.sql` over the views, with a scope fragment: global readers (Super Admin, HR, Finance), account managers (`account_manager_id`), recruiters (`= ANY(recruiter_ids)`).
+  - Revenue is refused (403) for other roles.
+  - Role dashboard: widgets merged across roles, a funnel, the oldest open requests, revenue by month.
+  - Export as CSV (RFC 4180, formula cells neutralised), xlsx (exceljs, MIT) or PDF (pdfkit), audited.
+  - Weekly summary cron (`0 4 * * 1` UTC = Monday 08:00 Dubai) emails Super Admins a PDF attachment; mail attachments are base64 so the queue stays JSON.
+- **Ask your data:**
+  - The `ask-data.v1` prompt describes the views, and the question is wrapped as untrusted.
+  - `guardSql` allows one SELECT/WITH and refuses:
+    - comments, semicolons, backslashes, dollar quotes, quoted identifiers;
+    - write/DDL/admin keywords;
+    - any relation that isn't a view or a local CTE;
+    - table functions.
+  - The query is then wrapped in `LIMIT 501`.
+  - Execution: `SET TRANSACTION READ ONLY`, `statement_timeout = 5s`, `SET LOCAL ROLE staffos_report_reader`.
+  - Errors: 422 `UNSAFE_QUERY` (with the SQL), `QUERY_TIMEOUT`, `QUERY_FAILED`.
+  - Limited to roles that already see every client, because the views are unscoped for free-form SQL.
+- **Tasks:** `GET /tasks` (mine or my role's, soonest due first) and `POST /tasks/:id/complete` (404 for others' tasks, 409 when already done).
+- **Web:**
+  - Dashboard with widgets and Recharts (MIT), using the theme's accent colour and screen-reader captions.
+  - Reports page with tabs, filters, exports and the Ask-your-data card (labelled "AI-assisted suggestion", SQL shown).
+  - My tasks page.
+- **Tests:**
+  - Unit: the SQL guard (allowed and refused cases, literals) and the export formats.
+  - Integration:
+    - Funnel counts and per-AM/recruiter scoping, the revenue 403.
+    - Dashboards per role and the export formats with filters.
+    - The weekly email with its PDF.
+    - Ask-data happy path plus `UNSAFE_QUERY` for other tables, writes and multiple statements; read-only and timeout behaviour; role limits.
+    - The task inbox.
+  - Web: dashboard widgets; ask-data answer, table and SQL.
+
+**Decisions / deviations (and why):**
+- **`DATABASE_URL_READONLY` stays optional:** a role switch inside the main connection gives the same guarantee without a second connection string on the free tier.
+- **Ask your data is not scoped by account manager:** free-form SQL can't be reliably scoped, so only roles that see all clients may use it.
+
+**Review notes (owner):** _to be written by @pathum_
+
+## 2026-10-09 — Client portal, settings, integrations, system admin
+
+**What was built:**
+- **Client portal home:** client users see their company's submitted timesheets, requests and invoices on the dashboard. It reuses the existing, already-scoped endpoints, so no new API was needed.
+- **Settings:** `GET/PATCH /settings` stores keys in the `settings` table, validated by `settingsSchema`, with defaults for missing rows and every update audited.
+  - `ai.monthlyBudgetUsd` overrides the env budget in `LlmService`.
+  - `vat.defaultRateBps` is used when a new client omits its VAT rate.
+- **Integrations:**
+  - `CrmProvider` interface with `ZohoCrmProvider`: plain REST, a self-client refresh token, the v8 upsert endpoint in batches of 100.
+  - The sync job stores Zoho ids on clients and contacts and records `zoho.lastSync` (counts, error). It never throws.
+  - Field names were checked against the owner's Zoho org through the Zoho MCP.
+  - `GET /integrations` reports each provider's status.
+- **Admin:** `GET /admin/system` (DB, pg-boss queue depth, AI calls and failures, automation/webhook failures, unsent emails, last sync). `POST /admin/demo-reset` runs the idempotent seed as a job, only in `DEMO_MODE`.
+- **Web:** the Settings and system page (settings form, integrations with "Sync now", health card, demo reset).
+- **Fix:** `/interviews/panel-options?search=` (name/email). The capped list of 200 made a test fail on a large DB; real teams would hit the same cap.
+- **Tests:** settings (403 matrix, validation, audit, budget wiring), integration status, system health, sync and demo reset refusals, and the Zoho sync against mocked `fetch` (ids stored, errors recorded).
+
+**Decisions / deviations (and why):**
+- **Only the settings that code actually reads are exposed.** `documentExpiryAlertDays`, `retention.candidateMonths` and `ai.providerByFeature` are not offered until something uses them.
+- **Zoho sync is one-way (StaffOS → Zoho):** account managers own client data in StaffOS. Pulling from Zoho would need ownership rules.
+- **VAT default:** not covered by an integration test, because changing a global setting would race with the CRM tests running in parallel.
+
+**Review notes (owner):** _to be written by @pathum_

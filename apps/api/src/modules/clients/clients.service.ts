@@ -27,9 +27,11 @@ import {
   clientWriteScope,
   projectWriteScope,
 } from '../../common/scoping/crm-scope';
+import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 
 const OPEN_REQUEST_STATUSES = ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED'] as const;
@@ -106,6 +108,7 @@ export class ClientsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly users: UsersService,
+    private readonly settings: SettingsService,
   ) {}
 
   // ── Clients ──
@@ -149,11 +152,14 @@ export class ClientsService {
 
   async create(input: ClientCreate, actor: Actor): Promise<Client> {
     const accountManagerId = await this.resolveAccountManager(input.accountManagerId, actor);
+    const vatRateBps =
+      input.vatRateBps ??
+      (await this.settings.get('vat.defaultRateBps', z.number().int().min(0).max(10_000), 500));
     try {
       return await this.prisma.$transaction(async (tx) => {
         const client = toClient(
           await tx.client.create({
-            data: { ...input, accountManagerId, createdById: actor.id },
+            data: { ...input, vatRateBps, accountManagerId, createdById: actor.id },
             include: clientInclude,
           }),
         );
