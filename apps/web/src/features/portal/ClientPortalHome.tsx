@@ -66,7 +66,7 @@ export function ClientPortalHome() {
           </Link>
         </Button>
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
         <Section
           title="Timesheets to approve"
           q={timesheets}

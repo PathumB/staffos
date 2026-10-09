@@ -44,7 +44,7 @@ export function DashboardPage() {
           </div>
         ) : (
           d && (
-            <div className="mb-6 grid gap-4">
+            <div className="mb-6 grid grid-cols-[minmax(0,1fr)] gap-4">
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {d.widgets.map((w) => (
                   <li key={w.key}>
@@ -52,9 +52,9 @@ export function DashboardPage() {
                   </li>
                 ))}
               </ul>
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
                 {d.funnel && (
-                  <Card>
+                  <Card className="min-w-0">
                     <CardHeader>
                       <CardTitle>Hiring funnel</CardTitle>
                       <CardDescription>Applications in the last 90 days</CardDescription>
@@ -69,7 +69,7 @@ export function DashboardPage() {
                   </Card>
                 )}
                 {d.revenueByMonth && (
-                  <Card>
+                  <Card className="min-w-0">
                     <CardHeader>
                       <CardTitle>Invoiced per month</CardTitle>
                       <CardDescription>Issued and paid invoices, last 12 months</CardDescription>
@@ -84,7 +84,7 @@ export function DashboardPage() {
                   </Card>
                 )}
                 {d.openRequests && (
-                  <Card>
+                  <Card className="min-w-0">
                     <CardHeader>
                       <CardTitle>Oldest open requests</CardTitle>
                     </CardHeader>

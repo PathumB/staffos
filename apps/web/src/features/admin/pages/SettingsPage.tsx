@@ -48,7 +48,7 @@ export function SettingsPage() {
         title="Settings and system"
         description="Changes apply immediately and are recorded in the audit log."
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
         <SettingsCard />
         {canHealth && <SystemCard />}
         {canIntegrations && <IntegrationsCard />}
