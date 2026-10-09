@@ -586,3 +586,47 @@ Review notes (owner): what AI got wrong, what I changed
 - **Retired default model:** `gemini-2.5-flash` and `2.0-flash` now return 404 for new keys. Switched the default to `gemini-3.8-flash`, verified with the owner's key, and made it configurable via `GEMINI_MODEL`.
 
 **Review notes (owner):** _to be written by @pathum_
+
+## 2026-10-09 — Workflows, automations and webhooks
+
+**What was built:**
+- **Approval chains (US-WF-01):** `workflows` module with `ApprovalsService` (start, decide, cancel), called inside the manpower-request and offer transactions so the subject's status and the chain can't disagree. Without an active chain the old single approval applies. Steps are locked (409) while approvals are pending. `GET /approvals` lists what's waiting on my roles.
+- **Automations (US-AUTO-01/02):**
+  - Domain events are emitted after commit for: application stage changed, employee hired, document expiring, timesheet submitted, manpower request created.
+  - For each matching active rule, one `automation_runs` row is created and executed as a pg-boss job.
+  - Conditions use eq/neq/gt/lt/in combined with AND, as pure functions in shared.
+  - Text placeholders are a plain `{{field}}` lookup that never evaluates anything.
+  - Retry re-runs a failed run with the same input. Dry run at `/automation-rules/:id/test`.
+  - The seed adds the three rules and a "Large manpower request" chain.
+- **Webhooks (US-HOOK-01):**
+  - The body is signed with HMAC-SHA256 (`sha256=<hex>`).
+  - Endpoint secrets are AES-256-GCM encrypted at rest; the key comes from HKDF over `WEBHOOK_SIGNING_SECRET`, falling back to `JWT_REFRESH_SECRET`.
+  - A claim-with-lease prevents double sends.
+  - Backoff is 30 s × 2ⁿ, up to 5 attempts, with a cron sweeper for due retries.
+  - Redirects are not followed.
+  - In production, every resolved address must be public (SSRF guard).
+  - Internal routing fields are stripped from payloads.
+  - `call_webhook` actions can forward any automation event.
+- **Web:** My approvals, Approval chains, Automations (rule builder, test dialog, run log with retry), Webhooks (secret shown once, deliveries, redeliver, rotate).
+- **Tests:**
+  - Shared unit tests for chain state, conditions, templates and schemas.
+  - API unit tests for signing, encryption, the SSRF ranges and delivery backoff.
+  - Integration:
+    - The 403 matrix.
+    - Rule runs, AND matching, failure and retry, dry run, delete.
+    - Signed deliveries, retries until FAILED, redeliver, rotate, delete.
+    - Two-step chains, a rejection ending the chain, steps locked while pending, a rule starting a chain.
+  - Full API run: 338 tests.
+
+**Decisions / deviations (and why):**
+- **Seeded rules complement the built-in flow rather than replacing it.** The onboarding plan and the account manager's hire alert stay in the hire transaction, so they can't be lost. Rule 1 adds a deployment task and a recruiter notice.
+- **Rule 3 (headcount > 20):** the rule starts the chain when the request is created. Submit then requires approval even below the threshold.
+- **Approver roles must hold the subject's approve permission.** The UI offers only those roles.
+- **Event names:** the API uses the enum names (e.g. `EMPLOYEE_HIRED`); delivery bodies use the dotted names (`employee.hired`).
+
+**What AI got wrong and fixed during the task:**
+- **Leaked routing fields:** after the include was widened for the event payloads, the application response briefly exposed the account manager and recruiter IDs. The DTO now maps its fields explicitly.
+- **Test isolation:** an interrupted test left a chain active and broke other approvals. The CRM suite now deactivates leftover test chains first.
+- **Parallel-run flake:** the delivery assertion now finds its own delivery by payload.
+
+**Review notes (owner):** _to be written by @pathum_

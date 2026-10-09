@@ -26,9 +26,11 @@ import {
 } from '../../common/scoping/crm-scope';
 import { validationFailed } from '../../common/validation/validation.pipe';
 import type { Prisma } from '../../generated/prisma/client';
+import { DomainEventsService } from '../../infra/events/domain-events.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { SettingsService } from '../settings/settings.service';
+import { ApprovalsService } from '../workflows/approvals.service';
 import { assertTransition, statusAfterSubmit } from './manpower-request.rules';
 
 const include = {
@@ -38,6 +40,8 @@ const include = {
   createdBy: userNameSelect,
 } satisfies Prisma.ManpowerRequestInclude;
 type Row = Prisma.ManpowerRequestGetPayload<{ include: typeof include }>;
+type Data = Prisma.ManpowerRequestUncheckedUpdateManyInput;
+type Tx = Prisma.TransactionClient;
 
 function toDto(r: Row): ManpowerRequest {
   return {
@@ -90,6 +94,8 @@ export class ManpowerRequestsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly settings: SettingsService,
+    private readonly approvals: ApprovalsService,
+    private readonly events: DomainEventsService,
   ) {}
 
   async list(query: ManpowerRequestListQuery, actor: Actor): Promise<Paginated<ManpowerRequest>> {
@@ -152,7 +158,7 @@ export class ManpowerRequestsService {
     this.assertStartDate(input.startDate);
     await this.assertProject(clientId, input.projectId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const created = toDto(
         await tx.manpowerRequest.create({
           data: {
@@ -186,6 +192,21 @@ export class ManpowerRequestsService {
       );
       return created;
     });
+    // After commit: automation rules (e.g. "headcount > 20 → HR Manager approval") react to it.
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      select: { accountManagerId: true },
+    });
+    await this.events.emit('MANPOWER_REQUEST_CREATED', {
+      manpowerRequestId: created.id,
+      roleTitle: created.roleTitle,
+      headcount: created.headcount,
+      clientId,
+      clientName: created.client.name,
+      emirate: created.emirate,
+      accountManagerId: client?.accountManagerId ?? null,
+    });
+    return created;
   }
 
   async update(id: string, input: ManpowerRequestUpdate, actor: Actor): Promise<ManpowerRequest> {
@@ -223,17 +244,27 @@ export class ManpowerRequestsService {
       z.number().int().min(1),
       DEFAULT_APPROVAL_THRESHOLD,
     );
-    const status = statusAfterSubmit(current.headcount, threshold);
+    // An approval chain already started for it (by an automation rule) also requires approval.
+    const chained = Boolean(await this.approvals.pending(this.ref(current)));
+    const status = chained ? 'PENDING_APPROVAL' : statusAfterSubmit(current.headcount, threshold);
     const now = new Date();
-    return this.change(id, version, 'SUBMIT', current, {
-      status,
-      submittedAt: now,
-      // Small requests are approved by the rule itself, recorded as such.
-      ...(status === 'APPROVED'
-        ? { decidedAt: now, decisionComment: `Auto-approved: headcount ≤ ${threshold}.` }
-        : {}),
+    return this.change(id, version, 'SUBMIT', current, async (tx) => {
+      if (status === 'PENDING_APPROVAL') await this.approvals.start(this.ref(current), tx);
+      return {
+        status,
+        submittedAt: now,
+        // Small requests are approved by the rule itself, recorded as such.
+        ...(status === 'APPROVED'
+          ? { decidedAt: now, decisionComment: `Auto-approved: headcount ≤ ${threshold}.` }
+          : {}),
+      };
     });
   }
+
+  /**
+   * Without a chain, one approval decides. With an approval chain (US-WF-01) each step's role
+   * approves in turn and only the last step approves the request; the version still moves on.
+   */
 
   async approve(
     id: string,
@@ -243,11 +274,21 @@ export class ManpowerRequestsService {
   ): Promise<ManpowerRequest> {
     const current = toDto(await this.find(id, manpowerRequestReadScope(actor)));
     assertTransition(current.status, 'approve');
-    return this.change(id, version, 'APPROVE', current, {
-      status: 'APPROVED',
-      decidedAt: new Date(),
-      decidedById: actor.id,
-      decisionComment: comment ?? null,
+    return this.change(id, version, 'APPROVE', current, async (tx) => {
+      const outcome = await this.approvals.decide(
+        this.ref(current),
+        'APPROVED',
+        comment ?? null,
+        actor,
+        tx,
+      );
+      if (outcome === 'ADVANCED') return {};
+      return {
+        status: 'APPROVED',
+        decidedAt: new Date(),
+        decidedById: actor.id,
+        decisionComment: comment ?? null,
+      };
     });
   }
 
@@ -259,11 +300,15 @@ export class ManpowerRequestsService {
   ): Promise<ManpowerRequest> {
     const current = toDto(await this.find(id, manpowerRequestReadScope(actor)));
     assertTransition(current.status, 'reject');
-    return this.change(id, version, 'REJECT', current, {
-      status: 'REJECTED',
-      decidedAt: new Date(),
-      decidedById: actor.id,
-      decisionComment: comment,
+    return this.change(id, version, 'REJECT', current, async (tx) => {
+      // Rejection at any step ends the chain and the request.
+      await this.approvals.decide(this.ref(current), 'REJECTED', comment, actor, tx);
+      return {
+        status: 'REJECTED',
+        decidedAt: new Date(),
+        decidedById: actor.id,
+        decisionComment: comment,
+      };
     });
   }
 
@@ -282,13 +327,22 @@ export class ManpowerRequestsService {
         'Ask your account manager to cancel this request.',
       );
     }
-    return this.change(id, version, 'CANCEL', current, {
-      status: 'CANCELLED',
-      cancelReason: reason,
+    return this.change(id, version, 'CANCEL', current, async (tx) => {
+      await this.approvals.cancel(this.ref(current), tx);
+      return { status: 'CANCELLED', cancelReason: reason };
     });
   }
 
   // ── Helpers ──
+
+  private ref(r: ManpowerRequest) {
+    return {
+      subject: 'MANPOWER_REQUEST' as const,
+      entityId: r.id,
+      title: `${r.roleTitle} ×${r.headcount} for ${r.client.name}`,
+      link: `/requests/${r.id}`,
+    };
+  }
 
   /**
    * Optimistic locking: the update only applies if the version the client saw is still current,
@@ -299,12 +353,13 @@ export class ManpowerRequestsService {
     version: number,
     action: string,
     before: ManpowerRequest,
-    data: Prisma.ManpowerRequestUncheckedUpdateManyInput,
+    data: Data | ((tx: Tx) => Promise<Data>),
   ): Promise<ManpowerRequest> {
     return this.prisma.$transaction(async (tx) => {
+      // Claim the version first so a stale caller fails before any approval step is recorded.
       const { count } = await tx.manpowerRequest.updateMany({
         where: { id, version },
-        data: { ...data, version: { increment: 1 } },
+        data: { version: { increment: 1 } },
       });
       if (count === 0) {
         throw new AppException(
@@ -315,6 +370,10 @@ export class ManpowerRequestsService {
             currentVersion: before.version,
           },
         );
+      }
+      const fields = typeof data === 'function' ? await data(tx) : data;
+      if (Object.keys(fields).length) {
+        await tx.manpowerRequest.update({ where: { id }, data: fields });
       }
       const after = toDto(await tx.manpowerRequest.findUniqueOrThrow({ where: { id }, include }));
       await this.audit.record(

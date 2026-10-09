@@ -1,5 +1,9 @@
 import { createBrowserRouter } from 'react-router';
 import { AuditLogPage } from '@/features/audit/pages/AuditLogPage';
+import { ApprovalsPage } from '@/features/automation/pages/ApprovalsPage';
+import { AutomationsPage } from '@/features/automation/pages/AutomationsPage';
+import { WebhooksPage } from '@/features/automation/pages/WebhooksPage';
+import { WorkflowsPage } from '@/features/automation/pages/WorkflowsPage';
 import {
   RedirectIfAuthenticated,
   RequireAuth,
@@ -268,6 +272,31 @@ export const routes = [
             element: (
               <RequirePermission permissions={['users:read']}>
                 <RolesPage />
+              </RequirePermission>
+            ),
+          },
+          { path: '/approvals', element: <ApprovalsPage /> },
+          {
+            path: '/admin/workflows',
+            element: (
+              <RequirePermission permissions={['workflows:manage']}>
+                <WorkflowsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/admin/automations',
+            element: (
+              <RequirePermission permissions={['automations:manage']}>
+                <AutomationsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/admin/webhooks',
+            element: (
+              <RequirePermission permissions={['webhooks:manage']}>
+                <WebhooksPage />
               </RequirePermission>
             ),
           },

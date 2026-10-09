@@ -23,7 +23,7 @@ export class HireService {
     tx: Prisma.TransactionClient,
     applicationId: string,
     actor: Actor,
-  ): Promise<{ employeeId: string }> {
+  ): Promise<{ employeeId: string; employeeNumber: string; startDate: Date }> {
     const application = await tx.application.findUniqueOrThrow({
       where: { id: applicationId },
       select: {
@@ -150,6 +150,10 @@ export class HireService {
       },
       tx,
     );
-    return { employeeId: employee.id };
+    return {
+      employeeId: employee.id,
+      employeeNumber: employee.employeeNumber,
+      startDate: offer.startDate,
+    };
   }
 }

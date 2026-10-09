@@ -23,6 +23,7 @@ import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ApprovalsService } from '../workflows/approvals.service';
 
 const include = {
   application: {
@@ -77,6 +78,13 @@ function toOffer(o: Row): Offer {
   };
 }
 
+const ref = (o: Row) => ({
+  subject: 'OFFER' as const,
+  entityId: o.id,
+  title: `Offer for ${o.application.candidate.firstName} ${o.application.candidate.lastName} (${o.application.job.title})`,
+  link: `/applications/${o.application.id}`,
+});
+
 const notFound = () =>
   new AppException(HttpStatus.NOT_FOUND, 'OFFER_NOT_FOUND', 'Offer not found.');
 const offerExists = () =>
@@ -97,6 +105,7 @@ export class OffersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly approvals: ApprovalsService,
   ) {}
 
   async list(query: OfferListQuery, actor: Actor): Promise<Paginated<Offer>> {
@@ -188,6 +197,8 @@ export class OffersService {
           },
           tx,
         );
+        // An active offer approval chain (US-WF-01), if defined, replaces the single approval.
+        await this.approvals.start(ref(offer), tx);
         return toOffer(offer);
       });
     } catch (error) {
@@ -208,7 +219,9 @@ export class OffersService {
   ): Promise<Offer> {
     const approval = action === 'approve' || action === 'reject';
     const current = await this.find(id, approval ? offerReadScope(actor) : offerWriteScope(actor));
-    if (approval && !canApproveOffer(actor, current.application.job.hiringManagerId)) {
+    // With a chain, its current step's role decides (checked in ApprovalsService.decide).
+    const chained = approval && Boolean(await this.approvals.pending(ref(current)));
+    if (approval && !chained && !canApproveOffer(actor, current.application.job.hiringManagerId)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         'NOT_OFFER_APPROVER',
@@ -227,12 +240,24 @@ export class OffersService {
 
     const now = new Date();
     return this.prisma.$transaction(async (tx) => {
+      let next = to;
+      if (chained) {
+        const outcome = await this.approvals.decide(
+          ref(current),
+          action === 'approve' ? 'APPROVED' : 'REJECTED',
+          input.reason ?? null,
+          actor,
+          tx,
+        );
+        if (outcome === 'ADVANCED') next = current.status; // waits for the next step
+      }
+      if (action === 'withdraw') await this.approvals.cancel(ref(current), tx);
       const { count } = await tx.offer.updateMany({
         where: { id, version: input.version },
         data: {
-          status: to,
+          status: next,
           version: { increment: 1 },
-          ...(action === 'approve' ? { approvedById: actor.id, approvedAt: now } : {}),
+          ...(next === 'APPROVED' ? { approvedById: actor.id, approvedAt: now } : {}),
           ...(action === 'send' ? { sentAt: now } : {}),
           ...(action === 'accept' || action === 'decline' ? { respondedAt: now } : {}),
         },
@@ -247,11 +272,11 @@ export class OffersService {
       }
       await this.audit.record(
         {
-          action: `OFFER_${action.toUpperCase()}`,
+          action: `OFFER_${action.toUpperCase()}${next === current.status ? '_STEP' : ''}`,
           entity: 'offer',
           entityId: id,
           before: { status: current.status },
-          after: { status: to, reason: input.reason },
+          after: { status: next, reason: input.reason },
         },
         tx,
       );
@@ -263,7 +288,7 @@ export class OffersService {
         accept: 'accepted — ready to hire',
         decline: 'declined by the candidate',
       };
-      if (message[action]) {
+      if (message[action] && next !== current.status) {
         await this.notifications.notify(
           recruiters,
           {

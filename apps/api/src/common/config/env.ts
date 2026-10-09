@@ -69,6 +69,8 @@ export const envSchema = z
     OPENAI_MODEL: z.preprocess(blankToUndefined, z.string().default('gpt-4o-mini')),
     /** Month-to-date AI spend limit in USD; 0 = no limit (the free Gemini tier costs nothing). */
     AI_MONTHLY_BUDGET_USD: z.preprocess(blankToUndefined, z.coerce.number().min(0).default(0)),
+    /** Encrypts webhook endpoint secrets at rest; unset = derived from JWT_REFRESH_SECRET. */
+    WEBHOOK_SIGNING_SECRET: z.preprocess(blankToUndefined, secret.optional()),
     /** Cloudflare Turnstile (free CAPTCHA) for the public apply form; unset = not checked. */
     TURNSTILE_SECRET_KEY: optionalString,
     MAIL_FROM: z.preprocess(

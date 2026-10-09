@@ -21,6 +21,7 @@ import { employeeReadScope, employeeWriteScope } from '../../common/scoping/hr-s
 import { candidateReadScope, candidateWriteScope } from '../../common/scoping/recruitment-scope';
 import type { Prisma } from '../../generated/prisma/client';
 import { JobsService } from '../../infra/jobs/jobs.service';
+import { DomainEventsService } from '../../infra/events/domain-events.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { StorageService } from '../../infra/storage/storage.service';
 import { AuditService } from '../audit/audit.service';
@@ -100,6 +101,7 @@ export class DocumentsService {
     private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly events: DomainEventsService,
     @InjectPinoLogger(DocumentsService.name) private readonly logger: PinoLogger,
     jobs: JobsService,
   ) {
@@ -319,12 +321,12 @@ export class DocumentsService {
       const e = doc.employee!;
       const label = DOCUMENT_TYPE_LABELS[doc.type];
       const expired = doc.expiryDate! < today;
-      await this.prisma.$transaction(async (tx) => {
+      const fresh = await this.prisma.$transaction(async (tx) => {
         const { count } = await tx.documentExpiryAlert.createMany({
           data: [{ documentId: doc.id, thresholdDays: threshold }],
           skipDuplicates: true,
         });
-        if (count === 0) return; // another instance got there first
+        if (count === 0) return false; // another instance got there first
         await tx.task.create({
           data: {
             title: `Renew ${label.toLowerCase()} for ${e.firstName} ${e.lastName}`,
@@ -345,8 +347,19 @@ export class DocumentsService {
           },
           tx,
         );
+        return true;
       });
+      if (!fresh) continue;
       alerted += 1;
+      await this.events.emit('DOCUMENT_EXPIRING', {
+        documentId: doc.id,
+        documentType: doc.type,
+        thresholdDays: threshold,
+        expiryDate: isoDay(doc.expiryDate),
+        employeeId: e.id,
+        employeeName: `${e.firstName} ${e.lastName}`,
+        employeeNumber: e.employeeNumber,
+      });
     }
     if (alerted) this.logger.info({ alerted }, 'Document expiry alerts sent');
     return alerted;

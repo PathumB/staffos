@@ -404,6 +404,13 @@ type AutomationRule = {
 };
 ```
 
+Implementation notes:
+- `event` values are the enum names (`APPLICATION_STAGE_CHANGED`, …).
+- `send_email.template` is one of `employee_hired`, `document_expiring`, `stage_changed`, `timesheet_submitted`, `manpower_request_created`.
+- Decisions on a chain go through the subject's own endpoints (`/manpower-requests/:id/approve|reject`, `/offers/:id/approve|reject`). Deciding someone else's step returns 403 `NOT_YOUR_APPROVAL_STEP`.
+- `PATCH /workflows/:id` with `steps` while approvals are pending returns 409 `WORKFLOW_IN_USE`.
+- Retrying a run that is not FAILED returns 409 `RUN_NOT_FAILED`.
+
 ### 2.19 AI
 
 All AI endpoints are rate limited, logged to `ai_requests`, and return `422 AI_UNAVAILABLE` (friendly message) on provider failure or exhausted budget.
@@ -459,7 +466,7 @@ type Field<T> = { value: T; confidence: number };  // 0–1; < 0.7 highlighted i
 | PATCH/DELETE | `/webhooks/:id` | `webhooks:manage` |
 | POST | `/webhooks/:id/rotate-secret` | `webhooks:manage` |
 | GET | `/webhooks/:id/deliveries` | `webhooks:manage` |
-| POST | `/webhooks/deliveries/:id/redeliver` | `webhooks:manage` |
+| POST | `/webhooks/deliveries/:id/redeliver` | `webhooks:manage`. Creates a new delivery with the same payload. Body: `{ id, event: 'employee.hired', createdAt, data }`; headers `X-StaffOS-Signature: sha256=<hex HMAC of body>`, `X-StaffOS-Event`, `X-StaffOS-Delivery` |
 | GET | `/integrations` | `integrations:manage`. Status of Zoho, mail, storage, LLM providers |
 | POST | `/integrations/zoho/sync` | `integrations:manage` → `202 { jobId }` |
 

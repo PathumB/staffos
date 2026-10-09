@@ -346,6 +346,10 @@ export const WebhookEvent = {
   APPLICATION_STAGE_CHANGED: 'APPLICATION_STAGE_CHANGED',
   EMPLOYEE_HIRED: 'EMPLOYEE_HIRED',
   INVOICE_ISSUED: 'INVOICE_ISSUED',
+  // Not subscribable on an endpoint; sent only by an automation's call_webhook action.
+  DOCUMENT_EXPIRING: 'DOCUMENT_EXPIRING',
+  TIMESHEET_SUBMITTED: 'TIMESHEET_SUBMITTED',
+  MANPOWER_REQUEST_CREATED: 'MANPOWER_REQUEST_CREATED',
 } as const;
 
 export type WebhookEvent = (typeof WebhookEvent)[keyof typeof WebhookEvent];

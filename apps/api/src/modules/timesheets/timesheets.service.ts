@@ -17,6 +17,7 @@ import {
   timesheetWriteScope,
 } from '../../common/scoping/workforce-scope';
 import type { Prisma } from '../../generated/prisma/client';
+import { DomainEventsService } from '../../infra/events/domain-events.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -81,6 +82,7 @@ export class TimesheetsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly events: DomainEventsService,
   ) {}
 
   async list(query: TimesheetListQuery, actor: Actor): Promise<Paginated<Timesheet>> {
@@ -261,7 +263,7 @@ export class TimesheetsService {
       select: { id: true },
     });
     const e = before.employee;
-    return this.transition(
+    const submitted = await this.transition(
       before,
       version,
       to,
@@ -281,6 +283,16 @@ export class TimesheetsService {
         );
       },
     );
+    await this.events.emit('TIMESHEET_SUBMITTED', {
+      timesheetId: before.id,
+      employeeId: e.id,
+      employeeName: `${e.firstName} ${e.lastName}`,
+      clientId: before.clientId,
+      clientName: before.client.name,
+      periodStart: isoDay(before.weekStart),
+      totalMinutes: before.totalMinutes,
+    });
+    return submitted;
   }
 
   /** US-TS-02: the client (or Finance) approves; name and time are recorded. */

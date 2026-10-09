@@ -21,6 +21,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AutomationsModule } from './modules/automations/automations.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { CareersModule } from './modules/careers/careers.module';
 import { ClientsModule } from './modules/clients/clients.module';
@@ -38,6 +39,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { SettingsModule } from './modules/settings/settings.service';
 import { TimesheetsModule } from './modules/timesheets/timesheets.module';
 import { UsersModule } from './modules/users/users.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
 
 @Module({
   imports: [
@@ -73,6 +76,7 @@ import { UsersModule } from './modules/users/users.module';
     AuditModule,
     NotificationsModule,
     SettingsModule,
+    WorkflowsModule,
     HealthModule,
     AuthModule,
     UsersModule,
@@ -91,6 +95,8 @@ import { UsersModule } from './modules/users/users.module';
     TimesheetsModule,
     InvoicesModule,
     AiModule,
+    WebhooksModule,
+    AutomationsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

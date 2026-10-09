@@ -10,6 +10,7 @@ import {
   seedDemoRecruitment,
   seedDemoWorkforce,
 } from './demo';
+import { seedAutomations } from './automations';
 import { seedOnboardingTemplates } from './onboarding';
 import { seedRbac } from './rbac';
 
@@ -26,7 +27,10 @@ export async function runSeed(): Promise<void> {
   try {
     await seedRbac(prisma);
     console.warn('Seeded roles and permissions.');
-    if (process.env.SEED_SCOPE !== 'rbac') await seedOnboardingTemplates(prisma);
+    if (process.env.SEED_SCOPE !== 'rbac') {
+      await seedOnboardingTemplates(prisma);
+      await seedAutomations(prisma);
+    }
     const demoAllowed = process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true';
     if (demoAllowed && process.env.SEED_SCOPE !== 'rbac') {
       await seedDemo(prisma);

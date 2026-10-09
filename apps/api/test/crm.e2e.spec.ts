@@ -27,6 +27,12 @@ describeWithDb('CRM: clients, contacts, activities, projects, manpower requests'
     prisma = app.get(PrismaService);
     http = request(app.getHttpServer());
     jest.spyOn(app.get(MailService), 'send').mockResolvedValue();
+    // A run cut short (e.g. network loss) can leave the test approval chain active; it would
+    // change how every request below is approved.
+    await prisma.workflowDefinition.updateMany({
+      where: { name: { startsWith: 'Two-step ' }, active: true },
+      data: { active: false },
+    });
     const make = async (role: RoleCode) => {
       const user = await createUser(app, { roles: [role] });
       return { id: user.id, token: (await login(app, user.email)).accessToken };
@@ -360,6 +366,140 @@ describeWithDb('CRM: clients, contacts, activities, projects, manpower requests'
       } finally {
         await prisma.setting.delete({ where: { key: 'manpowerApprovalThreshold' } });
       }
+    });
+
+    // Approval chains live in this file because they change how every manpower request in the
+    // database is approved while active; tests in one file run one at a time.
+    describe('approval chains (US-WF-01)', () => {
+      let workflowId: string;
+      beforeAll(async () => {
+        const { body } = await http
+          .post('/api/v1/workflows')
+          .set(auth(tokens.admin))
+          .send({
+            name: `Two-step ${randomUUID().slice(0, 6)}`,
+            subject: 'MANPOWER_REQUEST',
+            steps: [
+              { name: 'HR review', approverRole: 'HR_MANAGER' },
+              { name: 'Director sign-off', approverRole: 'SUPER_ADMIN' },
+            ],
+          })
+          .expect(201);
+        workflowId = body.id;
+        expect(body.steps.map((s: { stepOrder: number }) => s.stepOrder)).toEqual([1, 2]);
+      });
+      afterAll(async () => {
+        await prisma.workflowDefinition.update({
+          where: { id: workflowId },
+          data: { active: false },
+        });
+      });
+
+      const myApprovals = async (token: string) =>
+        (await http.get('/api/v1/approvals').set(auth(token)).expect(200)).body.data as {
+          entityId: string;
+          currentStep: number;
+        }[];
+
+      it('moves step by step; each step only by its role; last step approves', async () => {
+        const { body: draft } = await create(tokens.am1, { headcount: 30 }).expect(201);
+        const { body: pending } = await act(draft.id, 'submit', tokens.am1, {
+          version: draft.version,
+        }).expect(200);
+        expect(pending.status).toBe('PENDING_APPROVAL');
+        expect((await myApprovals(tokens.hr)).some((a) => a.entityId === draft.id)).toBe(true);
+        expect((await myApprovals(tokens.am1)).some((a) => a.entityId === draft.id)).toBe(false);
+
+        const { body: step1 } = await act(draft.id, 'approve', tokens.hr, {
+          version: pending.version,
+          comment: 'HR ok',
+        }).expect(200);
+        expect(step1).toMatchObject({ status: 'PENDING_APPROVAL', version: pending.version + 1 });
+        const notYours = await act(draft.id, 'approve', tokens.hr, { version: step1.version });
+        expect(notYours.status).toBe(403);
+        expect(notYours.body.code).toBe('NOT_YOUR_APPROVAL_STEP');
+        expect((await myApprovals(tokens.hr)).some((a) => a.entityId === draft.id)).toBe(false);
+
+        const { body: done } = await act(draft.id, 'approve', tokens.admin, {
+          version: step1.version,
+        }).expect(200);
+        expect(done.status).toBe('APPROVED');
+        const chain = await prisma.approvalRequest.findFirstOrThrow({
+          where: { manpowerRequestId: draft.id },
+          include: { decisions: { orderBy: { stepOrder: 'asc' } } },
+        });
+        expect(chain.status).toBe('APPROVED');
+        expect(chain.decisions.map((d) => [d.stepOrder, d.decision])).toEqual([
+          [1, 'APPROVED'],
+          [2, 'APPROVED'],
+        ]);
+      });
+
+      it('ends on a rejection at any step; steps are locked while approvals pend', async () => {
+        const { body: draft } = await create(tokens.am1, { headcount: 40 }).expect(201);
+        const { body: pending } = await act(draft.id, 'submit', tokens.am1, {
+          version: draft.version,
+        }).expect(200);
+        const locked = await http
+          .patch(`/api/v1/workflows/${workflowId}`)
+          .set(auth(tokens.admin))
+          .send({ steps: [{ name: 'Only', approverRole: 'HR_MANAGER' }] })
+          .expect(409);
+        expect(locked.body.code).toBe('WORKFLOW_IN_USE');
+
+        const { body: rejected } = await act(draft.id, 'reject', tokens.hr, {
+          version: pending.version,
+          comment: 'Not this quarter',
+        }).expect(200);
+        expect(rejected.status).toBe('REJECTED');
+        expect(
+          (
+            await prisma.approvalRequest.findFirstOrThrow({
+              where: { manpowerRequestId: draft.id },
+            })
+          ).status,
+        ).toBe('REJECTED');
+      });
+
+      it('an automation rule can start the chain for a small request (US-AUTO-02)', async () => {
+        const roleTitle = `Chained ${randomUUID().slice(0, 8)}`;
+        const { body: rule } = await http
+          .post('/api/v1/automation-rules')
+          .set(auth(tokens.admin))
+          .send({
+            name: `Approve ${roleTitle}`,
+            event: 'MANPOWER_REQUEST_CREATED',
+            conditions: [{ field: 'roleTitle', op: 'eq', value: roleTitle }],
+            actions: [{ type: 'start_approval', workflowId }],
+          })
+          .expect(201);
+        try {
+          const { body: draft } = await create(tokens.am1, { headcount: 2, roleTitle }).expect(201);
+          const run = await prisma.automationRun.findFirstOrThrow({ where: { ruleId: rule.id } });
+          expect(run).toMatchObject({ status: 'SUCCEEDED', attempts: 1 });
+          expect(run.payload).toMatchObject({ manpowerRequestId: draft.id, headcount: 2 });
+
+          const { body: submitted } = await act(draft.id, 'submit', tokens.am1, {
+            version: draft.version,
+          }).expect(200);
+          expect(submitted.status).toBe('PENDING_APPROVAL'); // not auto-approved despite ≤ 20
+
+          const { body: cancelled } = await act(draft.id, 'cancel', tokens.am1, {
+            version: submitted.version,
+            reason: 'Duplicate',
+          }).expect(200);
+          expect(cancelled.status).toBe('CANCELLED');
+          expect(
+            (
+              await prisma.approvalRequest.findFirstOrThrow({
+                where: { manpowerRequestId: draft.id },
+              })
+            ).status,
+          ).toBe('CANCELLED');
+        } finally {
+          await prisma.automationRule.update({ where: { id: rule.id }, data: { active: false } });
+        }
+      });
     });
 
     it('validates input (headcount, past start date, unknown fields)', async () => {

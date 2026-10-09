@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarClock,
   Clock,
+  CheckSquare,
   ClipboardList,
   Contact,
   FileClock,
@@ -13,6 +14,9 @@ import {
   ListChecks,
   type LucideIcon,
   Network,
+  Webhook,
+  Workflow,
+  Zap,
   Receipt,
   ScrollText,
   ShieldCheck,
@@ -37,7 +41,12 @@ export type NavSection = { label?: string; items: NavItem[] };
 
 /** Sidebar entries; each module adds its items here. Items are hidden without the permission. */
 export const NAV: NavSection[] = [
-  { items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }] },
+  {
+    items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/approvals', label: 'My approvals', icon: CheckSquare },
+    ],
+  },
   {
     label: 'CRM',
     items: [
@@ -101,6 +110,19 @@ export const NAV: NavSection[] = [
         icon: ShieldCheck,
         permission: 'users:read',
       },
+      {
+        to: '/admin/workflows',
+        label: 'Approval chains',
+        icon: Workflow,
+        permission: 'workflows:manage',
+      },
+      {
+        to: '/admin/automations',
+        label: 'Automations',
+        icon: Zap,
+        permission: 'automations:manage',
+      },
+      { to: '/admin/webhooks', label: 'Webhooks', icon: Webhook, permission: 'webhooks:manage' },
       { to: '/admin/audit-log', label: 'Audit log', icon: ScrollText, permission: 'audit:read' },
     ],
   },

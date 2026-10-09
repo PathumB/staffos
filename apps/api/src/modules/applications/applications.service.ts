@@ -17,6 +17,7 @@ import {
   jobPipelineWriteScope,
 } from '../../common/scoping/recruitment-scope';
 import type { Prisma } from '../../generated/prisma/client';
+import { DomainEventsService } from '../../infra/events/domain-events.service';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { assertStageTransition } from './application.rules';
@@ -24,7 +25,14 @@ import { HireService } from './hire.service';
 
 const include = {
   candidate: { select: { id: true, firstName: true, lastName: true, currentTitle: true } },
-  job: { select: { id: true, title: true, client: { select: { id: true, name: true } } } },
+  job: {
+    select: {
+      id: true,
+      title: true,
+      client: { select: { id: true, name: true, accountManagerId: true } },
+      recruiters: { select: { userId: true } },
+    },
+  },
 } satisfies Prisma.ApplicationInclude;
 type Row = Prisma.ApplicationGetPayload<{ include: typeof include }>;
 
@@ -48,7 +56,12 @@ function toApplication(
       name: `${a.candidate.firstName} ${a.candidate.lastName}`,
       currentTitle: a.candidate.currentTitle,
     },
-    job: a.job,
+    // Explicit fields: the include also loads routing data (account manager, recruiters).
+    job: {
+      id: a.job.id,
+      title: a.job.title,
+      client: { id: a.job.client.id, name: a.job.client.name },
+    },
     history: history?.map((h) => ({
       fromStage: h.fromStage,
       toStage: h.toStage,
@@ -68,6 +81,7 @@ export class ApplicationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly hiring: HireService,
+    private readonly events: DomainEventsService,
   ) {}
 
   async list(query: ApplicationListQuery, actor: Actor): Promise<Paginated<Application>> {
@@ -192,7 +206,8 @@ export class ApplicationsService {
 
     const now = new Date();
     const exit = input.to === 'REJECTED' || input.to === 'WITHDRAWN';
-    return this.prisma.$transaction(async (tx) => {
+    let hired: Awaited<ReturnType<HireService['hire']>> | undefined;
+    const result = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.application.updateMany({
         where: { id, version: input.version },
         data: {
@@ -224,7 +239,7 @@ export class ApplicationsService {
         },
       });
       // Same transaction: employee + onboarding plan exist only if the stage change commits.
-      if (input.to === 'HIRED') await this.hiring.hire(tx, id, actor);
+      if (input.to === 'HIRED') hired = await this.hiring.hire(tx, id, actor);
       await this.audit.record(
         {
           action: 'TRANSITION',
@@ -241,5 +256,32 @@ export class ApplicationsService {
       });
       return toApplication(after, after.stageHistory);
     });
+
+    // After commit: automation rules and webhooks (failures there never undo the move).
+    const base = {
+      applicationId: id,
+      jobId: current.job.id,
+      jobTitle: current.job.title,
+      clientId: current.job.client.id,
+      clientName: current.job.client.name,
+      candidateId: current.candidate.id,
+      candidateName: `${current.candidate.firstName} ${current.candidate.lastName}`,
+      accountManagerId: current.job.client.accountManagerId,
+      recruiterIds: current.job.recruiters.map((r) => r.userId),
+    };
+    await this.events.emit('APPLICATION_STAGE_CHANGED', {
+      ...base,
+      from: current.stage,
+      to: input.to,
+    });
+    if (hired) {
+      await this.events.emit('EMPLOYEE_HIRED', {
+        ...base,
+        employeeId: hired.employeeId,
+        employeeNumber: hired.employeeNumber,
+        startDate: hired.startDate.toISOString().slice(0, 10),
+      });
+    }
+    return result;
   }
 }
