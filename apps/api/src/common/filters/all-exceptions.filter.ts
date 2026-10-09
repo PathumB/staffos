@@ -4,6 +4,7 @@ import { ApiError, ErrorCode } from '@staffos/shared';
 import type { Request, Response } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { AppException } from '../errors/app.exception';
+import { captureError } from '../../infra/monitoring/sentry';
 
 const CODE_BY_STATUS: Record<number, string> = {
   400: ErrorCode.BAD_REQUEST,
@@ -50,6 +51,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error({ err: exception, traceId }, 'Unhandled error');
+      captureError(exception, traceId);
     }
 
     const payload: ApiError = { ...body, traceId };

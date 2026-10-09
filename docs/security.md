@@ -185,6 +185,9 @@ Implementation: `common/scoping/` exposes `scopeFor(actor, entity)`, which retur
 
 ## 9. Logging, audit and monitoring
 
+- `req.ip` trusts `TRUST_PROXY_HOPS` proxies (2 in production: Vercel rewrite + Render). Vercel overwrites `X-Forwarded-For`; requests sent straight to the Render host could spoof it (no IP allow-list on the free tier).
+- Sentry receives 5xx errors only, tagged with `traceId`, with user, headers, cookies and bodies removed.
+
 - **Audit log** (`audit_logs`): actor, action, entity, entityId, before, after, IP, user agent, traceId, timestamp. Append-only (no update/delete in code; DB trigger rejects UPDATE/DELETE). Sensitive fields (password hashes, tokens, document numbers) are redacted from before/after.
 - **Application logs**: pino JSON, `traceId` per request (from `X-Request-Id` or generated), returned in error responses. Redaction paths: `req.headers.authorization`, `req.headers.cookie`, `*.password`, `*.token`.
 - **Sentry**: errors from the web and API apps with release tags; PII scrubbing enabled (`sendDefaultPii: false`).

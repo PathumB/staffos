@@ -700,3 +700,23 @@ Review notes (owner): what AI got wrong, what I changed
 - **VAT default:** not covered by an integration test, because changing a global setting would race with the CRM tests running in parallel.
 
 **Review notes (owner):** _to be written by @pathum_
+
+## 2026-10-09 — Hardening
+
+**What was built:**
+- **Proxies:** `TRUST_PROXY_HOPS` (2 on Render: the Vercel rewrite, then Render's proxy), so rate limits and audit IPs are per visitor. Vercel overwrites `X-Forwarded-For`.
+  - Known limit: a client calling the Render host directly could spoof the header. Render's free tier has no IP allow-list.
+- **Storage:** Supabase Storage is live in production.
+  - A private `documents` bucket with a 10 MB limit.
+  - The new `sb_secret_` key is sent as `apikey` and as the Bearer token.
+  - Unit tests check the headers, signed URLs, error handling and refusal of keys it didn't generate.
+  - A live round-trip check confirmed upload, signed download, refused public access and delete.
+- **Sentry (free tier), optional:** `SENTRY_DSN` (API, 5xx errors with `traceId`) and `VITE_SENTRY_DSN` (web). Both are off when unset, and user info, headers, cookies and bodies are stripped before sending.
+- **Zoho sync:** stores ids in bulk with `UPDATE … FROM (VALUES …)`, 200 rows per statement, skipping ids already linked.
+- **E2E journey 5:** a client user opening another client's request gets a 404 in both the UI and the API.
+
+**What AI got wrong and fixed during the task:**
+- **Stale shared test:** a shared test still expected the old built-in VAT default after it moved to settings. CI caught it.
+- **Slow sync:** a row-by-row Zoho id update timed out on a large database.
+
+**Review notes (owner):** _to be written by @pathum_

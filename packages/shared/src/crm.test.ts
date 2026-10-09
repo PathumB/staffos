@@ -19,11 +19,10 @@ const request = {
 describe('CRM schemas', () => {
   it('applies client defaults on create but never on update', () => {
     const base = { name: 'Gulf Build', industry: 'CONSTRUCTION', city: 'Dubai', emirate: 'DUBAI' };
-    expect(clientInputSchema.parse(base)).toMatchObject({
-      vatRateBps: 500,
-      paymentTermsDays: 30,
-      status: 'ACTIVE',
-    });
+    const parsed = clientInputSchema.parse(base);
+    expect(parsed).toMatchObject({ paymentTermsDays: 30, status: 'ACTIVE' });
+    // VAT is left unset so the API applies the admin's `vat.defaultRateBps` setting.
+    expect(parsed.vatRateBps).toBeUndefined();
     expect(clientUpdateSchema.parse({ name: 'New name' })).toEqual({ name: 'New name' });
   });
 

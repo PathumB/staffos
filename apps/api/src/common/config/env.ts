@@ -34,6 +34,8 @@ export const envSchema = z
           .filter(Boolean),
       ),
     SWAGGER_ENABLED: optionalBool,
+    /** Sentry (free tier) error tracking; unset = off. */
+    SENTRY_DSN: z.preprocess(blankToUndefined, z.url().optional()),
     /** Proxies between the visitor and the API (2 on Render behind the Vercel rewrite). */
     TRUST_PROXY_HOPS: z.preprocess(
       blankToUndefined,

@@ -7,7 +7,10 @@ import { createQueryClient } from './app/query-client';
 import { router } from './app/router';
 import { ThemeProvider, useTheme } from './app/theme';
 import { AuthProvider } from './features/auth/AuthProvider';
+import { initSentry } from './lib/sentry';
 import './index.css';
+
+initSentry();
 
 const queryClient = createQueryClient();
 

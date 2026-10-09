@@ -254,7 +254,8 @@ VITE_TURNSTILE_SITE_KEY=
 CAREERS_APPLY_RATE_LIMIT_PER_HOUR=5
 
 WEBHOOK_SIGNING_SECRET=
-SENTRY_DSN=
+SENTRY_DSN=                    # API error tracking (Sentry free); unset = off
+VITE_SENTRY_DSN=               # web error tracking; set in Vercel env
 ZOHO_CLIENT_ID=
 ZOHO_CLIENT_SECRET=
 ZOHO_REFRESH_TOKEN=
