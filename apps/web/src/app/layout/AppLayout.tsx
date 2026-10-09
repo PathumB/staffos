@@ -21,7 +21,7 @@ import { canSeeNavItem, NAV } from './nav';
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = useAuth();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-6 p-3">
+    <nav aria-label="Main" className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-3">
       {NAV.map((section, i) => {
         const items = section.items.filter((item) => canSeeNavItem(item, (p) => can(p)));
         if (items.length === 0) return null;
